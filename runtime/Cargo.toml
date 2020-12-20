@@ -1,11 +1,11 @@
 [package]
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
+authors = ['Idavoll Network <https://github.com/idavollnetwork>']
 edition = '2018'
-homepage = 'https://substrate.dev'
+homepage = 'https://idavoll.network'
 license = 'Unlicense'
-name = 'node-template-runtime'
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
-version = '2.0.0'
+name = 'idavoll-node-runtime'
+repository = 'https://github.com/idavollnetwork/idavoll/'
+version = '0.0.1'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
