@@ -23,7 +23,7 @@ jsonrpc-core = '15.0.0'
 structopt = '0.3.8'
 
 # local dependencies
-idavoll-node-runtime = { path = '../runtime', version = '0.0.1' }
+idavoll-runtime = { path = '../runtime', version = '0.0.1' }
 
 # Substrate dependencies
 frame-benchmarking = '2.0.0'
@@ -54,4 +54,4 @@ substrate-frame-rpc-system = '2.0.0'
 
 [features]
 default = []
-runtime-benchmarks = ['idavoll-node-runtime/runtime-benchmarks']
+runtime-benchmarks = ['idavoll-runtime/runtime-benchmarks']

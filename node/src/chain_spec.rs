@@ -1,5 +1,5 @@
 use sp_core::{Pair, Public, sr25519};
-use idavoll_node_runtime::{
+use idavoll_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
 	SudoConfig, SystemConfig, WASM_BINARY, Signature
 };

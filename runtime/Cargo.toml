@@ -3,7 +3,7 @@ authors = ['Idavoll Network <https://github.com/idavollnetwork>']
 edition = '2018'
 homepage = 'https://idavoll.network'
 license = 'Unlicense'
-name = 'idavoll-node-runtime'
+name = 'idavoll-runtime'
 repository = 'https://github.com/idavollnetwork/idavoll/'
 version = '0.0.1'
 
