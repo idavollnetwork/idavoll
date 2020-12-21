@@ -2,7 +2,7 @@
 
 set -e
 
-echo "*** Start Substrate node template ***"
+echo "*** Start Idavoll Network node ***"
 
 cd $(dirname ${BASH_SOURCE[0]})/..
 
