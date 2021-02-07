@@ -1,12 +1,12 @@
 [package]
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
-description = 'FRAME pallet template for defining custom runtime logic.'
+authors = ['Idavoll Network <https://github.com/idavollnetwork>']
+description = 'Idavoll Network DAO pallet for defining a DAO management platform.'
 edition = '2018'
-homepage = 'https://substrate.dev'
-license = 'Unlicense'
-name = 'pallet-template'
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
-version = '2.0.0'
+homepage = 'https://idavoll.network'
+license = 'GPL-3.0'
+name = 'pallet-idavoll'
+repository = 'https://github.com/idavollnetwork/idavoll/'
+version = '0.0.1'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
