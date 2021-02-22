@@ -13,6 +13,9 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub type Organization_Id = u64;
+pub struct Proposal;
+
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
 	/// Because this pallet emits events, it depends on the runtime's definition of an event.
@@ -29,6 +32,13 @@ decl_storage! {
 		// Learn more about declaring storage items:
 		// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
 		Something get(fn something): Option<u32>;
+		/// The hashes of the active proposals.
+		pub Proposals get(fn proposals): map hasher(identity) Organization_Id => Vec<T::Hash>;
+		/// Actual proposal for a given hash, if it's current.
+		pub ProposalOf get(fn proposal_of):
+			map hasher(identity) T::Hash => Option<<T as Config<I>>::Proposal>;
+		/// The current members of the organization.
+		pub Members get(fn members): map hasher(identity) Organization_Id => Vec<T::AccountId>;
 	}
 }
 
