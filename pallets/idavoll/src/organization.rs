@@ -19,6 +19,9 @@
 ///
 ///
 
+use frame_support::{
+	ensure,
+};
 
 pub const LengthLimit: i32 = 32;
 pub const InitOrgID: u64 = 1000;
@@ -42,52 +45,32 @@ pub struct Organization {
     pub description: Vec<u8>,
 }
 
+impl Default for Organization {
+
+	fn default() -> Organization {
+        InitOrgID = InitOrgID + 1；
+		Organization {
+			id: InitOrgID,
+			total: 0,
+			name: "default".Into(),
+			description: "this is a org".Into(),
+		}
+	}
+}
+
 impl Organization {
-    /// Create a builder for this object.
-    #[inline]
-    pub fn builder() -> OrganizationBuilder {
-        OrganizationBuilder {
-            body: Default::default(),
-        }
-    }
 
     #[inline]
-    pub fn admin_get_all_orgs() -> OrganizationGetBuilder {
-        OrganizationGetBuilder {
-            param_page: None,
-            param_limit: None,
-        }
-    }
+    pub fn build( total: u64, name: Vec<u8>, description: Vec<u8>) -> Result<Self,Error> {
 
-    #[inline]
-    pub fn org_get_all() -> OrganizationGetBuilder1 {
-        OrganizationGetBuilder1 {
-            param_page: None,
-            param_limit: None,
-        }
-    }
-
-    #[inline]
-    pub fn org_get() -> OrganizationGetBuilder2<crate::generics::MissingOrg> {
-        OrganizationGetBuilder2 {
-            inner: Default::default(),
-            _param_org: core::marker::PhantomData,
-        }
-    }
-
-    #[inline]
-    pub fn org_list_current_user_orgs() -> OrganizationGetBuilder3 {
-        OrganizationGetBuilder3 {
-            param_page: None,
-            param_limit: None,
-        }
-    }
-
-    #[inline]
-    pub fn org_list_user_orgs() -> OrganizationGetBuilder4<crate::generics::MissingUsername> {
-        OrganizationGetBuilder4 {
-            inner: Default::default(),
-            _param_username: core::marker::PhantomData,
-        }
+        InitOrgID = InitOrgID + 1；
+        ensure!(name.len() <= LengthLimit as usize, Error::BadMetadata);
+        ensure!(description.len() <= (LengthLimit * 3) as usize, Error::BadMetadata);
+        Ok(Organization {
+            id: InitOrgID,
+            total: total,
+            name: name.clone(),
+            description: description.clone(),
+        })
     }
 }
