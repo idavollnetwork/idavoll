@@ -1,4 +1,4 @@
-// This file is part of Idavoll Node.
+// This file is part of Idavoll Network.
 
 // Copyright (C) 2021 Idavoll Network.
 
@@ -19,19 +19,27 @@
 ///
 ///
 
-use
+
+pub const LengthLimit: i32 = 32;
+pub const InitOrgID: u64 = 1000;
+pub const MaxMembers: i32 = 1000;
+
+pub trait DefaultAction {
+
+    fn change_organization_name() -> Error;
+    fn transfer() -> Error;
+}
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Organization {
-    pub avatar_url: Option<String>,
-    pub description: Option<String>,
-    pub full_name: Option<String>,
-    pub id: Option<i64>,
-    pub location: Option<String>,
-    pub repo_admin_change_team_access: Option<bool>,
-    pub username: Option<String>,
-    pub visibility: Option<String>,
-    pub website: Option<String>,
+    /// The origanization id assigned by system
+    pub id: u64
+    /// The total balance of the origanization.
+	pub total: u64,
+	/// The user friendly name of this origanization. Limited in length by `LengthLimit`.
+	pub name: Vec<u8>,
+    /// The description of the origanization. Limited in length by `3 * LengthLimit`.
+    pub description: Vec<u8>,
 }
 
 impl Organization {
