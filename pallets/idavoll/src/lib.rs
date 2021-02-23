@@ -30,6 +30,12 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+mod organization;
+mod token;
+mod voting;
+mod finance;
+
+
 pub type Organization_Id = u64;
 pub struct Proposal;
 
