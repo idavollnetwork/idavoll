@@ -34,7 +34,7 @@ pub trait DefaultAction {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct Organization {
+pub struct Organization<AccountId> {
     /// The origanization id assigned by system
     pub id: u64
     /// The total balance of the origanization.
@@ -43,9 +43,10 @@ pub struct Organization {
 	pub name: Vec<u8>,
     /// The description of the origanization. Limited in length by `3 * LengthLimit`.
     pub description: Vec<u8>,
+    pub creator:   AccountId, 
 }
 
-impl Default for Organization {
+impl<AccountId> Default for Organization<AccountId> {
 
 	fn default() -> Organization {
         InitOrgID = InitOrgID + 1；
@@ -54,14 +55,15 @@ impl Default for Organization {
 			total: 0,
 			name: "default".Into(),
 			description: "this is a org".Into(),
+            creator: AccountId::default(),
 		}
 	}
 }
 
-impl Organization {
+impl<AccountId> Organization<AccountId> {
 
     #[inline]
-    pub fn build( total: u64, name: Vec<u8>, description: Vec<u8>) -> Result<Self,Error> {
+    pub fn build( total: u64, name: Vec<u8>, description: Vec<u8>,aid: AccountId) -> Result<Self,Error> {
 
         InitOrgID = InitOrgID + 1；
         ensure!(name.len() <= LengthLimit as usize, Error::BadMetadata);
@@ -71,6 +73,7 @@ impl Organization {
             total: total,
             name: name.clone(),
             description: description.clone(),
+            creator: aid.clone(),
         })
     }
 }
