@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-//! a asset pallet derived from pallet-asset,it will be used to token and finance module
+//! a idavoll-asset pallet derived from pallet-assets,it will be used to token and finance module
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get};
-use frame_system::ensure_signed;
 use pallet_assets as assets;
+use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get,ensure};
+use frame_system::ensure_signed;
 
 
 #[cfg(test)]
@@ -30,9 +30,9 @@ mod mock;
 mod tests;
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
-pub trait Trait: frame_system::Trait {
-	/// Because this pallet emits events, it depends on the runtime's definition of an event.
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+pub trait Trait: assets::Trait {
+    /// Because this pallet emits events, it depends on the runtime's definition of an event.
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 // The pallet's runtime storage items.
@@ -40,7 +40,6 @@ pub trait Trait: frame_system::Trait {
 decl_storage! {
 	// A unique name is used to ensure that the pallet's storage items are isolated.
 	// This name may be updated, but each pallet in the runtime must use a unique name.
-	// ---------------------------------vvvvvvvvvvvvvv
 	trait Store for Module<T: Trait> as IdavollAsset {
 		// Learn more about declaring storage items:
 		// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
@@ -73,14 +72,10 @@ decl_error! {
 // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-		// Errors must be initialized if they are used by the pallet.
-		type Error = Error<T>;
 
-		// Events must be initialized if they are used by the pallet.
-		fn deposit_event() = default;
+        type Error = Error<T>;
+        fn deposit_event() = default;
 
-		/// An example dispatchable that takes a singles value as a parameter, writes the value to
-		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
 		#[weight = 10_000 + T::DbWeight::get().writes(1)]
 		pub fn do_something(origin, something: u32) -> dispatch::DispatchResult {
 			// Check that the extrinsic was signed and get the signer.
@@ -96,47 +91,6 @@ decl_module! {
 			// Return a successful DispatchResult
 			Ok(())
 		}
-
-		/// An example dispatchable that may throw a custom error.
-		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
-		pub fn cause_error(origin) -> dispatch::DispatchResult {
-			let _who = ensure_signed(origin)?;
-
-			// Read a value from storage.
-			match Something::get() {
-				// Return an error if the value has not been set.
-				None => Err(Error::<T>::NoneValue)?,
-				Some(old) => {
-					// Increment the value read from storage; will error in the event of overflow.
-					let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-					// Update the value in storage with the incremented result.
-					Something::put(new);
-					Ok(())
-				},
-			}
-		}
-
-		// #[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
-		// pub fn issue_token_airdrop(origin) -> dispatch::DispatchResult {
-		// 	let sender = ensure_signed(origin).map_err(|e| e.as_str())?;
-	
-		// 	const ACCOUNT_ALICE: u64 = 1;
-		// 	const ACCOUNT_BOB: u64 = 2;
-		// 	const COUNT_AIRDROP_RECIPIENTS: u64 = 2;
-		// 	const TOKENS_FIXED_SUPPLY: u64 = 100;
-	
-		// 	ensure!(!COUNT_AIRDROP_RECIPIENTS.is_zero(), "Divide by zero error.");
-	
-		// 	let asset_id = Self::next_asset_id();
-	
-		// 	<NextAssetId<T>>::mutate(|asset_id| *asset_id += 1);
-		// 	<Balances<T>>::insert((asset_id, &ACCOUNT_ALICE), TOKENS_FIXED_SUPPLY / COUNT_AIRDROP_RECIPIENTS);
-		// 	<Balances<T>>::insert((asset_id, &ACCOUNT_BOB), TOKENS_FIXED_SUPPLY / COUNT_AIRDROP_RECIPIENTS);
-		// 	<TotalSupply<T>>::insert(asset_id, TOKENS_FIXED_SUPPLY);
-	
-		// 	Self::deposit_event(RawEvent::Issued(asset_id, sender, TOKENS_FIXED_SUPPLY));
-		// 	Ok(())
-		// }
 	}
 }
 

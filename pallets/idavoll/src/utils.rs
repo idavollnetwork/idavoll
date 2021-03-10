@@ -16,15 +16,15 @@ pub enum Error {
 	BalanceZero,
 	/// The signing account has no permission to do the operation.
 	NoPermission,
-	/// The given asset ID is unknown.
+	/// The given idavoll-asset ID is unknown.
 	Unknown,
 	/// The origin account is frozen.
 	Frozen,
-	/// The asset ID is already taken.
+	/// The idavoll-asset ID is already taken.
 	InUse,
 	/// Too many zombie accounts in use.
 	TooManyZombies,
-	/// Attempt to destroy an asset class when non-zombie, reference-bearing accounts exist.
+	/// Attempt to destroy an idavoll-asset class when non-zombie, reference-bearing accounts exist.
 	NotFound,
 	/// Invalid witness data given.
 	BadWitness,
