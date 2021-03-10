@@ -22,10 +22,9 @@
 use frame_support::{
 	ensure,
 };
-
-pub const LengthLimit: i32 = 32;
-pub const InitOrgID: u64 = 1000;
-pub const MaxMembers: i32 = 1000;
+use crate::utils::*;
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 pub trait DefaultAction {
 
@@ -33,47 +32,48 @@ pub trait DefaultAction {
     fn transfer() -> Error;
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct Organization<AccountId> {
-    /// The origanization id assigned by system
-    pub id: u64
-    /// The total balance of the origanization.
-	pub total: u64,
-	/// The user friendly name of this origanization. Limited in length by `LengthLimit`.
-	pub name: Vec<u8>,
-    /// The description of the origanization. Limited in length by `3 * LengthLimit`.
-    pub description: Vec<u8>,
-    pub creator:   AccountId, 
-}
+// #[derive(Debug, Default, Clone,Eq)]
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+// pub struct Organization<AccountId> {
+//     /// The origanization id assigned by system
+//     pub id: u64,
+//     /// The total balance of the origanization.
+// 	pub total: u64,
+// 	/// The user friendly name of this origanization. Limited in length by `LengthLimit`.
+// 	pub name: Vec<u8>,
+//     /// The description of the origanization. Limited in length by `3 * LengthLimit`.
+//     pub description: Vec<u8>,
+//     pub creator:   AccountId, 
+// }
 
-impl<AccountId> Default for Organization<AccountId> {
+// impl<AccountId> Default for Organization<AccountId> {
 
-	fn default() -> Organization {
-        InitOrgID = InitOrgID + 1；
-		Organization {
-			id: InitOrgID,
-			total: 0,
-			name: "default".Into(),
-			description: "this is a org".Into(),
-            creator: AccountId::default(),
-		}
-	}
-}
+// 	fn default() -> Organization<AccountId> {
+//         InitOrgID = InitOrgID + 1；
+// 		Organization<AccountId> {
+// 			id: InitOrgID,
+// 			total: 0,
+// 			name: "default".Into(),
+// 			description: "this is a org".Into(),
+//             creator: AccountId::default(),
+// 		}
+// 	}
+// }
 
-impl<AccountId> Organization<AccountId> {
+// impl<AccountId> Organization<AccountId> {
 
-    #[inline]
-    pub fn build( total: u64, name: Vec<u8>, description: Vec<u8>,aid: AccountId) -> Result<Self,Error> {
+//     #[inline]
+//     pub fn build( total: u64, name: Vec<u8>, description: Vec<u8>,aid: AccountId) -> Result<Self,Error> {
 
-        InitOrgID = InitOrgID + 1；
-        ensure!(name.len() <= LengthLimit as usize, Error::BadMetadata);
-        ensure!(description.len() <= (LengthLimit * 3) as usize, Error::BadMetadata);
-        Ok(Organization {
-            id: InitOrgID,
-            total: total,
-            name: name.clone(),
-            description: description.clone(),
-            creator: aid.clone(),
-        })
-    }
-}
+//         InitOrgID = InitOrgID + 1；
+//         ensure!(name.len() <= LengthLimit as usize, Error::BadMetadata);
+//         ensure!(description.len() <= (LengthLimit * 3) as usize, Error::BadMetadata);
+//         Ok(Organization {
+//             id: InitOrgID,
+//             total: total,
+//             name: name.clone(),
+//             description: description.clone(),
+//             creator: aid.clone(),
+//         })
+//     }
+// }

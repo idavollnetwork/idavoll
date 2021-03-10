@@ -1,11 +1,27 @@
-#![cfg_attr(not(feature = "std"), no_std)]
+/*
+ * Copyright 2021 Idavoll Network
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-/// Edit this file to define custom logic or remove it if it is not needed.
-/// Learn more about FRAME and the core library of Substrate FRAME pallets:
-/// https://substrate.dev/docs/en/knowledgebase/runtime/frame
+//! a asset pallet derived from pallet-asset,it will be used to token and finance module
+
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get};
 use frame_system::ensure_signed;
+use pallet_assets as assets;
+
 
 #[cfg(test)]
 mod mock;
@@ -25,7 +41,7 @@ decl_storage! {
 	// A unique name is used to ensure that the pallet's storage items are isolated.
 	// This name may be updated, but each pallet in the runtime must use a unique name.
 	// ---------------------------------vvvvvvvvvvvvvv
-	trait Store for Module<T: Trait> as TemplateModule {
+	trait Store for Module<T: Trait> as IdavollAsset {
 		// Learn more about declaring storage items:
 		// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
 		Something get(fn something): Option<u32>;
@@ -99,5 +115,31 @@ decl_module! {
 				},
 			}
 		}
+
+		// #[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		// pub fn issue_token_airdrop(origin) -> dispatch::DispatchResult {
+		// 	let sender = ensure_signed(origin).map_err(|e| e.as_str())?;
+	
+		// 	const ACCOUNT_ALICE: u64 = 1;
+		// 	const ACCOUNT_BOB: u64 = 2;
+		// 	const COUNT_AIRDROP_RECIPIENTS: u64 = 2;
+		// 	const TOKENS_FIXED_SUPPLY: u64 = 100;
+	
+		// 	ensure!(!COUNT_AIRDROP_RECIPIENTS.is_zero(), "Divide by zero error.");
+	
+		// 	let asset_id = Self::next_asset_id();
+	
+		// 	<NextAssetId<T>>::mutate(|asset_id| *asset_id += 1);
+		// 	<Balances<T>>::insert((asset_id, &ACCOUNT_ALICE), TOKENS_FIXED_SUPPLY / COUNT_AIRDROP_RECIPIENTS);
+		// 	<Balances<T>>::insert((asset_id, &ACCOUNT_BOB), TOKENS_FIXED_SUPPLY / COUNT_AIRDROP_RECIPIENTS);
+		// 	<TotalSupply<T>>::insert(asset_id, TOKENS_FIXED_SUPPLY);
+	
+		// 	Self::deposit_event(RawEvent::Issued(asset_id, sender, TOKENS_FIXED_SUPPLY));
+		// 	Ok(())
+		// }
 	}
 }
+
+// impl<T: Trait> Module<T> { 
+	
+// }
