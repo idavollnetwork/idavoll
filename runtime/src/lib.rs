@@ -266,9 +266,9 @@ impl pallet_assets::Trait for Runtime {
 	type AssetId = u32;
 	type Event = Event;
 }
-impl idavoll_asset::Trait for Runtime {
-	type Event = Event;
-}
+// impl idavoll_asset::Trait for Runtime {
+// 	type Event = Event;
+// }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -287,7 +287,7 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 		// Include the custom logic from the template pallet in the runtime.
 		Assets: pallet_assets::{Module, Call, Storage, Event<T>},
-		IdavollAsset: idavoll_asset::{Module, Call, Storage, Event<T>},
+		// IdavollAsset: idavoll_asset::{Module, Call, Storage, Event<T>},
 	}
 );
 
