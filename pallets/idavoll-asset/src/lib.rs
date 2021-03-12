@@ -89,6 +89,14 @@ decl_event! {
 		Transferred(AssetId, AccountId, AccountId, Balance),
 		/// Some assets were destroyed. \[asset_id, owner, balance\]
 		Destroyed(AssetId, AccountId, Balance),
+		/// Some assets were minted. \[asset_id, issuer, amount\]
+		Minted(AssetId, AccountId, Balance),
+		/// Some assets were burned. \[asset_id, issuer, amount\]
+		Burned(AssetId, AccountId, Balance),
+		/// Some assets were locked. \[asset_id, who, amount\]
+		Locked(AssetId, AccountId, Balance),
+		/// Some assets were unlocked. \[asset_id, who, amount\]
+		UnLocked(AssetId, AccountId, Balance),
 	}
 }
 
@@ -100,6 +108,12 @@ decl_error! {
 		BalanceLow,
 		/// Balance should be non-zero
 		BalanceZero,
+		/// The signing account has no permission to do the operation.
+		NoPermission,
+		/// The given asset ID is unknown.
+		Unknown,
+		/// A mint operation lead to an overflow.
+		Overflow,
 	}
 }
 
@@ -190,6 +204,7 @@ impl<T: Trait> Module<T> {
         }
 
         Balances::<T>::try_mutate((id, origin.clone()), |origin_account| -> dispatch::DispatchResult {
+            ensure!(origin_account.free >= amount, Error::<T>::BalanceLow);
             origin_account.free = origin_account.free.checked_sub(&amount)
                 .ok_or(Error::<T>::BalanceLow)?;
             Ok(())
@@ -206,6 +221,61 @@ impl<T: Trait> Module<T> {
                 });
                 Ok(())
             })
+    }
+    fn base_mint(id: T::AssetId, issuer: T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
+        TotalSupply::<T>::try_mutate(id, |maybe_asset| {
+            let details = maybe_asset.as_mut().ok_or(Error::<T>::Unknown)?;
+
+            ensure!(&issuer == &details.issuer, Error::<T>::NoPermission);
+            details.supply = details.supply.checked_add(&amount).ok_or(Error::<T>::Overflow)?;
+
+            Balances::<T>::try_mutate((id, issuer.clone()), |t| -> dispatch::DispatchResult {
+                t.free.saturating_add(amount);
+                Ok(())
+            })?;
+            Self::deposit_event(RawEvent::Minted(id, issuer.clone(), amount));
+            Ok(())
+        })
+    }
+    fn base_burn(id: T::AssetId, issuer: T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
+        TotalSupply::<T>::try_mutate(id, |maybe_asset| {
+            let d = maybe_asset.as_mut().ok_or(Error::<T>::Unknown)?;
+            ensure!(&issuer == &d.issuer, Error::<T>::NoPermission);
+
+            Balances::<T>::try_mutate((id, issuer.clone()), |maybe_account| -> dispatch::DispatchResult {
+                ensure!(maybe_account.free >= amount, Error::<T>::BalanceLow);
+                maybe_account.free = maybe_account.free.checked_sub(&amount)
+                    .ok_or(Error::<T>::BalanceLow)?;
+                Ok(())
+            })?;
+
+            d.supply = d.supply.saturating_sub(amount);
+
+            Self::deposit_event(RawEvent::Burned(id, issuer, amount));
+            Ok(())
+        })
+    }
+    fn base_lock(id: T::AssetId, who: T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
+        Balances::<T>::try_mutate((id, who.clone()), |maybe_account| -> dispatch::DispatchResult {
+            ensure!(maybe_account.free >= amount, Error::<T>::BalanceLow);
+            maybe_account.free = maybe_account.free.checked_sub(&amount)
+                .ok_or(Error::<T>::BalanceLow)?;
+            maybe_account.frozen = maybe_account.frozen.saturating_add(amount);
+            Ok(())
+        })?;
+        Self::deposit_event(RawEvent::Locked(id, who.clone(), amount));
+        Ok(())
+    }
+    fn base_unlock(id: T::AssetId, who: T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
+        Balances::<T>::try_mutate((id, who.clone()), |maybe_account| -> dispatch::DispatchResult {
+            ensure!(maybe_account.frozen >= amount, Error::<T>::BalanceLow);
+            maybe_account.frozen = maybe_account.frozen.checked_sub(&amount)
+                .ok_or(Error::<T>::BalanceLow)?;
+            maybe_account.free = maybe_account.free.saturating_add(amount);
+            Ok(())
+        })?;
+        Self::deposit_event(RawEvent::UnLocked(id, who.clone(), amount));
+        Ok(())
     }
 }
 
