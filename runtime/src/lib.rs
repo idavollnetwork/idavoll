@@ -38,8 +38,8 @@ pub use frame_support::{
 	},
 };
 
-/// Import the template pallet.
-pub use pallet_template;
+pub use pallet_assets;
+pub use idavoll_asset;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -260,11 +260,15 @@ impl pallet_sudo::Trait for Runtime {
 	type Event = Event;
 	type Call = Call;
 }
-
-/// Configure the template pallet in pallets/template.
-impl pallet_template::Trait for Runtime {
+impl pallet_assets::Trait for Runtime {
+	/// The type for recording an account's balance.
+	type Balance = Balance;
+	type AssetId = u32;
 	type Event = Event;
 }
+// impl idavoll_asset::Trait for Runtime {
+// 	type Event = Event;
+// }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -282,7 +286,8 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment::{Module, Storage},
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 		// Include the custom logic from the template pallet in the runtime.
-		TemplateModule: pallet_template::{Module, Call, Storage, Event<T>},
+		Assets: pallet_assets::{Module, Call, Storage, Event<T>},
+		// IdavollAsset: idavoll_asset::{Module, Call, Storage, Event<T>},
 	}
 );
 
