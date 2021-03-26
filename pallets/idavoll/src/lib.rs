@@ -16,13 +16,16 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-
+#![recursion_limit="128"]
 /// Edit this file to define custom logic or remove it if it is not needed.
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// https://substrate.dev/docs/en/knowledgebase/runtime/frame
 
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get};
 use frame_system::ensure_signed;
+use sp_runtime::{Permill, ModuleId, RuntimeDebug, traits::{
+	Zero, StaticLookup, AccountIdConversion, Saturating
+}};
 
 #[cfg(test)]
 mod mock;
@@ -36,24 +39,34 @@ mod voting;
 mod finance;
 mod utils;
 
-pub type OrganizationId = u64;
-pub struct Proposal;
+pub use organization::{OrgInfo, Proposal,OrganizationId};
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
 	/// Because this pallet emits events, it depends on the runtime's definition of an event.
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+	/// The idavoll's module id, used for deriving its sovereign account ID,use to organization id.
+	type ModuleId: Get<ModuleId>;
 }
+
+type BalanceOf<T> = <<T as frame_system::Trait>::AccountId>::Balance;
+type OrgInfoOf<T> = OrgInfo<<T as frame_system::Trait>::AccountId, <T as Trait>::VotingSystem>;
+pub type OrgCount = u32;
+type ProposalIdOf<T> = <T as frame_system::Trait>::Hash;
+type ProposalOf<T> = Proposal<
+	Vec<u8>,
+	<T as Trait>::ProposalMetadata,
+	<T as frame_system::Trait>::AccountId,
+	<T as Trait>::VotingSystem,
+>;
 
 // The pallet's runtime storage items.
 // https://substrate.dev/docs/en/knowledgebase/runtime/storage
 decl_storage! {
-	// A unique name is used to ensure that the pallet's storage items are isolated.
-	// This name may be updated, but each pallet in the runtime must use a unique name.
-	// ---------------------------------vvvvvvvvvvvvvv
 	trait Store for Module<T: Trait> as IdavollModule {
-		// Learn more about declaring storage items:
-		// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
+		pub Counter get(fn counter): OrgCount = 0;
+		pub OrgInfos get(fn OrgInfos): map hasher(blake2_128_concat) T::AccountId => Option<OrgInfoOf<T>>;
+        pub Proposals get(fn proposals): map hasher(blake2_128_concat) ProposalIdOf<T> => Option<ProposalOf<T>>;
 		Something get(fn something): Option<u32>;
 	}
 }
@@ -73,7 +86,7 @@ decl_error! {
 	pub enum Error for Module<T: Trait> {
 		/// Error names should be descriptive.
 		NoneValue,
-		/// Errors should have helpful documentation associated with them.
+		/// need the maximum number for the storage value for the fixed type.
 		StorageOverflow,
 	}
 }
@@ -85,7 +98,7 @@ decl_module! {
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 		// Errors must be initialized if they are used by the pallet.
 		type Error = Error<T>;
-
+		const ModuleId: ModuleId = T::ModuleId::get();
 		// Events must be initialized if they are used by the pallet.
 		fn deposit_event() = default;
 
@@ -126,4 +139,8 @@ decl_module! {
 			}
 		}
 	}
+}
+
+impl<T: Trait> Module<T> {
+
 }

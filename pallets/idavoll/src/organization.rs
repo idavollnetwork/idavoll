@@ -20,11 +20,16 @@
 ///
 
 use frame_support::{
-	ensure,
+	ensure,dispatch,
 };
+use crate::{Counter, OrgInfos,Proposals, Module, RawEvent, Trait,
+            OrgCount,OrgInfoOf};
 use crate::utils::*;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use codec::{Decode, Encode};
+use sp_runtime::{RuntimeDebug};
+use sp_std::prelude::Vec;
 
 pub trait DefaultAction {
 
@@ -32,48 +37,55 @@ pub trait DefaultAction {
     fn transfer() -> Error;
 }
 
-// #[derive(Debug, Default, Clone,Eq)]
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-// pub struct Organization<AccountId> {
-//     /// The origanization id assigned by system
-//     pub id: u64,
-//     /// The total balance of the origanization.
-// 	pub total: u64,
-// 	/// The user friendly name of this origanization. Limited in length by `LengthLimit`.
-// 	pub name: Vec<u8>,
-//     /// The description of the origanization. Limited in length by `3 * LengthLimit`.
-//     pub description: Vec<u8>,
-//     pub creator:   AccountId, 
-// }
+/// This structure is used to encode metadata about an organization.
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub struct OrgInfo<AccountId, VotingSystem> {
+    /// A set of accounts of an organization.
+    pub members: Vec<AccountId>,
 
-// impl<AccountId> Default for Organization<AccountId> {
+    /// Which voting system is in place. `executors` do not need to go
+    /// through it due to their higher privilege permission.
+    // pub voting: VotingSystem,
+}
 
-// 	fn default() -> Organization<AccountId> {
-//         InitOrgID = InitOrgID + 1；
-// 		Organization<AccountId> {
-// 			id: InitOrgID,
-// 			total: 0,
-// 			name: "default".Into(),
-// 			description: "this is a org".Into(),
-//             creator: AccountId::default(),
-// 		}
-// 	}
-// }
+impl<AccountId: Ord, VotingSystem> OrgInfo<AccountId, VotingSystem> {
+    /// Sort all the vectors inside the strutcture.
+    pub fn sort(&mut self) {
+        self.members.sort();
+    }
+}
 
-// impl<AccountId> Organization<AccountId> {
+/// Represent a proposal as stored by the pallet.
+#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub struct Proposal<Call, Metadata, OrganizationId, VotingSystem> {
+    pub org: OrganizationId,
+    pub call: Call,
+    pub metadata: Metadata,
+    pub voting: VotingSystem,
+}
 
-//     #[inline]
-//     pub fn build( total: u64, name: Vec<u8>, description: Vec<u8>,aid: AccountId) -> Result<Self,Error> {
+pub type OrganizationId = u64;
 
-//         InitOrgID = InitOrgID + 1；
-//         ensure!(name.len() <= LengthLimit as usize, Error::BadMetadata);
-//         ensure!(description.len() <= (LengthLimit * 3) as usize, Error::BadMetadata);
-//         Ok(Organization {
-//             id: InitOrgID,
-//             total: total,
-//             name: name.clone(),
-//             description: description.clone(),
-//             creator: aid.clone(),
-//         })
-//     }
-// }
+
+impl<T: Trait> Module<T> {
+    // be accountid of organization id for orginfos in the storage
+    pub fn counter2Orgid(c: OrgCount) -> T::AccountId {
+        Self::ModuleId.into_sub_account(c)
+    }
+    fn create_org(oinfo: OrgInfoOf<T>) -> dispatch::DispatchResult {
+        let counter = Counter::<T>::get();
+        let new_counter = counter.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
+        let oid = Self::counter2Orgid(counter);
+
+        OrgInfos::<T>::insert(&oid, oinfo.clone());
+
+        Self::deposit_event(RawEvent::OrganizationCreated(org_id, details));
+        Counter::<T>::put(new_counter);
+        Ok(())
+    }
+    fn add_member_on_orgid(oid: T::AccountId) -> dispatch::DispatchResult {
+        Ok(())
+    }
+}
