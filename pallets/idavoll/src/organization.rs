@@ -80,12 +80,22 @@ impl<T: Trait> Module<T> {
         let oid = Self::counter2Orgid(counter);
 
         OrgInfos::<T>::insert(&oid, oinfo.clone());
-
         Self::deposit_event(RawEvent::OrganizationCreated(org_id, details));
         Counter::<T>::put(new_counter);
         Ok(())
     }
-    fn add_member_on_orgid(oid: T::AccountId) -> dispatch::DispatchResult {
-        Ok(())
+    // add a member into a organization by orgid
+    fn base_add_member_on_orgid(oid: T::AccountId,memberID: T::AccountId) -> dispatch::DispatchResult {
+        OrgInfo::<T>::try_mutate(oid,|infos| -> dispatch::DispatchResult {
+            match infos.members
+                .iter()
+                .find(|&x| x==memberID) {
+                None => {
+                    infos.members.push(memberID);
+                    Ok(())
+                },
+                _ => Ok(())
+            }
+        })
     }
 }
