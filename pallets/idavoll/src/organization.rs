@@ -30,6 +30,7 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use sp_runtime::{RuntimeDebug};
 use sp_std::prelude::Vec;
+use sp_runtime::traits::Hash;
 
 pub trait DefaultAction {
 
@@ -59,11 +60,17 @@ impl<AccountId: Ord, VotingSystem> OrgInfo<AccountId, VotingSystem> {
 /// Represent a proposal as stored by the pallet.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct Proposal<Call, Metadata, OrganizationId, VotingSystem> {
+pub struct Proposal<Call, Metadata, OrganizationId> {
     pub org: OrganizationId,
     pub call: Call,
     pub metadata: Metadata,
-    pub voting: VotingSystem,
+    // pub voting: VotingSystem,
+}
+impl<Call,Metadata, OrganizationId> Proposal<Call,Metadata, OrganizationId> {
+    // get proposal id by hash the content in the proposal
+    pub fn id(&mut self) -> Trait::Hash {
+        Trait::Hashing::hash_of(&[self.encode()])
+    }
 }
 
 pub type OrganizationId = u64;
@@ -83,6 +90,9 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::OrganizationCreated(org_id, details));
         Counter::<T>::put(new_counter);
         Ok(())
+    }
+    fn make_proposal_id(proposal: ProposalOf<T>) -> ProposalIdOf<T> {
+        proposal.clone().id()
     }
     // add a member into a organization by orgid
     fn base_add_member_on_orgid(oid: T::AccountId,memberID: T::AccountId) -> dispatch::DispatchResult {
