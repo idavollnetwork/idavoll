@@ -22,7 +22,7 @@
 use frame_support::{
 	ensure,dispatch,
 };
-use crate::{Counter, OrgInfos,Proposals, Module, RawEvent, Trait,
+use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf, Module, RawEvent, Trait,
             OrgCount,OrgInfoOf};
 use crate::utils::*;
 #[cfg(feature = "std")]
@@ -97,5 +97,26 @@ impl<T: Trait> Module<T> {
                 _ => Ok(())
             }
         })
+    }
+    fn get_proposal_by_id(pid: ProposalIdOf<T>) -> Result<ProposalOf<T>, dispatch::DispatchError> {
+        match Proposals::<T>::get(pid) {
+            Some(proposal) => Ok(proposal),
+            None => Err(Error::<T>::ProposalNotFound.into()),
+        }
+    }
+    fn is_pass(proposal: ProposalOf<T>) -> bool {
+        return true
+    }
+    fn base_proposal_finalize(pid: ProposalIdOf<T>) -> dispatch::DispatchResult {
+        let proposal = Self::get_proposal_by_id(pid)?;
+        if Self::is_pass(proposal.clone()) {
+            let call = <T as Trait>::Call::decode(&mut &proposal.clone().call[..]).map_err(|_| Error::<T>::ProposalDecodeFailed)?;
+            let res = call.dispatch(frame_system::RawOrigin::Signed(proposal.clone().org).into());
+            Self::deposit_event(RawEvent::ProposalFinalized(pid, res.map(|_| ()).map_err(|e| e.error)));
+        }
+        // remove the proposal
+        Proposals::<T>::remove(pid);
+        Self::deposit_event(RawEvent::ProposalPassed(pid));
+        Ok(())
     }
 }

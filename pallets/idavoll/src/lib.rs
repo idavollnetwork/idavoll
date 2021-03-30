@@ -78,6 +78,10 @@ decl_event!(
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		SomethingStored(u32, AccountId),
+		/// A proposal has been finalized with the following result. \[proposal id, result\]
+        ProposalFinalized(ProposalIdOf<T>, dispatch::DispatchResult),
+        /// A proposal has been passed. \[proposal id]
+        ProposalPassed(ProposalIdOf<T>),
 	}
 );
 
@@ -88,6 +92,9 @@ decl_error! {
 		NoneValue,
 		/// need the maximum number for the storage value for the fixed type.
 		StorageOverflow,
+		/// not found the proposal by id in the runtime storage
+		ProposalNotFound,
+		ProposalDecodeFailed,
 	}
 }
 
