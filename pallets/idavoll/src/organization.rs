@@ -25,8 +25,6 @@ use frame_support::{
 use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf, Module, RawEvent, Trait,
             OrgCount,OrgInfoOf};
 use crate::utils::*;
-use crate::rules::{BaseRule,OrgRuleParam};
-
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
@@ -34,8 +32,8 @@ use sp_runtime::{RuntimeDebug};
 use sp_std::prelude::Vec;
 use sp_runtime::traits::Hash;
 
-pub type OrganizationId = u64;
 pub trait DefaultAction {
+
     fn change_organization_name() -> Error;
     fn transfer() -> Error;
 }
@@ -43,18 +41,16 @@ pub trait DefaultAction {
 /// This structure is used to encode metadata about an organization.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct OrgInfo<AccountId, Balance> {
+pub struct OrgInfo<AccountId, VotingSystem> {
     /// A set of accounts of an organization.
     pub members: Vec<AccountId>,
 
-    /// params for every organization,will set on create organization
-    pub param:  OrgRuleParam<Balance>,
     /// Which voting system is in place. `executors` do not need to go
     /// through it due to their higher privilege permission.
     // pub voting: VotingSystem,
 }
 
-impl<AccountId: Ord, Balance> OrgInfo<AccountId, Balance> {
+impl<AccountId: Ord, VotingSystem> OrgInfo<AccountId, VotingSystem> {
     /// Sort all the vectors inside the strutcture.
     pub fn sort(&mut self) {
         self.members.sort();
@@ -77,7 +73,7 @@ impl<Call,Metadata, OrganizationId> Proposal<Call,Metadata, OrganizationId> {
     }
 }
 
-
+pub type OrganizationId = u64;
 
 
 impl<T: Trait> Module<T> {
@@ -121,7 +117,6 @@ impl<T: Trait> Module<T> {
     fn is_pass(proposal: ProposalOf<T>) -> bool {
         return true
     }
-    // a proposal has been voted,it will be finalized once by anyone in org,
     fn base_proposal_finalize(pid: ProposalIdOf<T>) -> dispatch::DispatchResult {
         let proposal = Self::get_proposal_by_id(pid)?;
         if Self::is_pass(proposal.clone()) {
