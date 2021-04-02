@@ -25,6 +25,7 @@ use sp_std::collections::btree_map::{BTreeMap as Map, Entry as MapEntry};
 
 use crate::utils::*;
 pub const LengthLimit01: i32 = 32;
+pub const MaxRuleNumber: u32 = 10_000;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -42,22 +43,26 @@ pub trait BaseRule {
     fn on_can_close(creator: Self::AccountId,detail: Self::Params) -> dispatch::DispatchResult;
 }
 
-pub struct OrgRuleParam {
-    
+#[derive(Debug, Default, Clone,Eq)]
+pub struct OrgRuleParam<Balance> {
+    pub minAffirmative: Balance,
+    pub maxDissenting:  Balance,
+    pub abstention: Balance,
 }
 
-// #[derive(Debug, Default, Clone,Eq)]
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-// pub struct IdvToken<AccountId> {
-//     /// The balance of the idv token
-//     pub balance: Map<AccountId, u64>,
-//     pub allowance: Map<AccountId,Map<AccountId,u64>>,
-//     /// The total balance of the token.
-// 	pub total: u64,
-// 	/// The user friendly name of this token. Limited in length by `LengthLimit`.
-// 	pub name: Vec<u8>,
-//     pub owner:   AccountId, 
-// }
+impl <Balance> OrgRuleParam<Balance> {
+    pub fn default() -> Self {
+        Self{
+            minAffirmative: Balance::default(),
+            maxDissenting: Balance::default(),
+            abstention: Balance::default(),
+        }
+    }
+}
+
+
+
+
 
 
 

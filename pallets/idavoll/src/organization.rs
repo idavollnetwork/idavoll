@@ -25,6 +25,7 @@ use frame_support::{
 use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf, Module, RawEvent, Trait,
             OrgCount,OrgInfoOf};
 use crate::utils::*;
+use crate::rules::{BaseRule,OrgRuleParam};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -42,16 +43,18 @@ pub trait DefaultAction {
 /// This structure is used to encode metadata about an organization.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct OrgInfo<AccountId, VotingSystem> {
+pub struct OrgInfo<AccountId, Balance> {
     /// A set of accounts of an organization.
     pub members: Vec<AccountId>,
 
+    /// params for every organization,will set on create organization
+    pub param:  OrgRuleParam<Balance>,
     /// Which voting system is in place. `executors` do not need to go
     /// through it due to their higher privilege permission.
     // pub voting: VotingSystem,
 }
 
-impl<AccountId: Ord, VotingSystem> OrgInfo<AccountId, VotingSystem> {
+impl<AccountId: Ord, Balance> OrgInfo<AccountId, Balance> {
     /// Sort all the vectors inside the strutcture.
     pub fn sort(&mut self) {
         self.members.sort();
