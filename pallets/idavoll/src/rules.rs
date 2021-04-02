@@ -16,7 +16,8 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 
-use frame_support::ensure;
+
+use frame_support::{ ensure,dispatch };
 #[cfg(feature = "std")]
 use std::collections::{HashMap as Map, hash_map::Entry as MapEntry};
 #[cfg(not(feature = "std"))]
@@ -28,6 +29,22 @@ pub const LengthLimit01: i32 = 32;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
+
+pub trait BaseRule {
+    type AccountId;
+    type BlockNumber;
+    type Params;
+    type Data;
+
+    /// i
+    fn on_proposal_pass(height: Self::BlockNumber,content: Self::Data,detail: Self::Params) -> bool;
+    fn on_proposal_expired(height: Self::BlockNumber,detail: Self::Params) -> dispatch::DispatchResult;
+    fn on_can_close(creator: Self::AccountId,detail: Self::Params) -> dispatch::DispatchResult;
+}
+
+pub struct OrgRuleParam {
+    
+}
 
 // #[derive(Debug, Default, Clone,Eq)]
 // #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -42,31 +59,5 @@ use serde::{Deserialize, Serialize};
 //     pub owner:   AccountId, 
 // }
 
-// impl<AccountId> IdvToken<AccountId> {
-
-//     pub fn totalSupply(&self) -> u64 {
-//         self->total
-//     }
-
-//     pub fn balanceOf(&self, owner: AccountId) -> Result<u64,Error> {
-//         Ok(())
-//     }
-
-//     pub fn allowance(&self, owner: AccountId, spender: AccountId) -> Result<u64,Error> {
-//         Ok(())
-//     }
-
-//     pub fn transfer(&self, to: AccountId, value: u64) -> Result<(),Error> {
-//         Ok(())
-//     }
-
-//     function approve(spender: AccountId, value: u64) -> Result<(),Error> {
-//         Ok(())
-//     }
-
-//     function transferFrom(from: AccountId, to: AccountId, value: u64) -> Result<(),Error> {
-//         Ok(())
-//     }
-// }
 
 

@@ -25,6 +25,7 @@ use frame_support::{
 use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf, Module, RawEvent, Trait,
             OrgCount,OrgInfoOf};
 use crate::utils::*;
+
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
@@ -32,8 +33,8 @@ use sp_runtime::{RuntimeDebug};
 use sp_std::prelude::Vec;
 use sp_runtime::traits::Hash;
 
+pub type OrganizationId = u64;
 pub trait DefaultAction {
-
     fn change_organization_name() -> Error;
     fn transfer() -> Error;
 }
@@ -73,7 +74,7 @@ impl<Call,Metadata, OrganizationId> Proposal<Call,Metadata, OrganizationId> {
     }
 }
 
-pub type OrganizationId = u64;
+
 
 
 impl<T: Trait> Module<T> {
@@ -117,6 +118,7 @@ impl<T: Trait> Module<T> {
     fn is_pass(proposal: ProposalOf<T>) -> bool {
         return true
     }
+    // a proposal has been voted,it will be finalized once by anyone in org,
     fn base_proposal_finalize(pid: ProposalIdOf<T>) -> dispatch::DispatchResult {
         let proposal = Self::get_proposal_by_id(pid)?;
         if Self::is_pass(proposal.clone()) {
