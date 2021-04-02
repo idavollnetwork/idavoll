@@ -34,7 +34,7 @@ mod mock;
 mod tests;
 
 mod organization;
-mod token;
+mod rules;
 mod voting;
 mod finance;
 mod utils;
@@ -57,7 +57,7 @@ type ProposalOf<T> = Proposal<
 	Vec<u8>,
 	<T as Trait>::ProposalMetadata,
 	<T as frame_system::Trait>::AccountId,
-	<T as Trait>::VotingSystem,
+	// <T as Trait>::VotingSystem,
 >;
 
 // The pallet's runtime storage items.
