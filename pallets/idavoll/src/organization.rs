@@ -31,7 +31,7 @@ use crate::rules::{BaseRule,OrgRuleParam};
 use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use sp_runtime::{RuntimeDebug};
-use sp_std::prelude::Vec;
+use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
 use sp_runtime::traits::Hash;
 
 pub type OrganizationId = u64;
@@ -39,6 +39,25 @@ pub trait DefaultAction {
     fn change_organization_name() -> Error;
     fn transfer() -> Error;
 }
+
+/// this is the free proposal,every one in the organization can create
+/// the proposal for pay a little fee, it not staking any asset to do this.
+#[derive(Eq, PartialEq, RuntimeDebug, Encode, Decode, Clone, Default)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub struct ProposalDetail<AccountId, Balance, BlockNumber>
+    where
+        AccountId: Ord,
+{
+    /// A map of voter => (coins, in agree or against)
+    pub votes: BTreeMap<AccountId, (Balance, bool)>,
+    /// the creator of the proposal
+    pub creator: AccountId,
+    /// the datetime of the proposal created.
+    pub dt: u128,
+}
+
+pub type ProposalDetailOf<T> = ProposalDetail<<T as frame_system::Trait>::AccountId,
+    <<T as frame_system::Trait>::AccountId>::Balance,<T as frame_system::Trait>::BlockNumber>;
 
 /// This structure is used to encode metadata about an organization.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
@@ -64,12 +83,13 @@ impl<AccountId: Ord, Balance> OrgInfo<AccountId, Balance> {
 /// Represent a proposal as stored by the pallet.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct Proposal<Call, Metadata, OrganizationId> {
+pub struct Proposal<Call, ProposalDetail, OrganizationId> {
     pub org: OrganizationId,
     pub call: Call,
-    pub metadata: Metadata,
+    pub detail: ProposalDetail,
     // pub voting: VotingSystem,
 }
+
 impl<Call,Metadata, OrganizationId> Proposal<Call,Metadata, OrganizationId> {
     // get proposal id by hash the content in the proposal
     pub fn id(&mut self) -> Trait::Hash {
@@ -94,6 +114,20 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::OrganizationCreated(org_id, details));
         Counter::<T>::put(new_counter);
         Ok(())
+    }
+    fn base_create_proposal(oid: T::AccountId,detail: ProposalDetailOf<T>,call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {
+
+        let proposal = Proposal{
+            org:    oid.clone(),
+            call:   call.clone(),
+            detail: detail.clone(),
+        };
+        let proposal_id = proposal.clone().id();
+        if Proposals::<T>::contains_key(proposal_id) {
+            return Err(Error::<T>::ProposalDuplicate.into());
+        }
+        Proposals::<T>::insert(&proposal_id, proposal.clone());
+        Self::deposit_event(RawEvent::ProposalCreated(target_org_id, proposal_id,detail.creator.clone()));
     }
     fn make_proposal_id(proposal: ProposalOf<T>) -> ProposalIdOf<T> {
         proposal.clone().id()

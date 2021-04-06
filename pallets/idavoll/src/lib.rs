@@ -39,7 +39,7 @@ mod voting;
 mod finance;
 mod utils;
 
-pub use organization::{OrgInfo, Proposal,OrganizationId};
+pub use organization::{OrgInfo, Proposal,OrganizationId,ProposalDetailOf};
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
@@ -50,12 +50,13 @@ pub trait Trait: frame_system::Trait {
 }
 
 type BalanceOf<T> = <<T as frame_system::Trait>::AccountId>::Balance;
-type OrgInfoOf<T> = OrgInfo<<T as frame_system::Trait>::AccountId, <T as Trait>::VotingSystem>;
+type OrgInfoOf<T> = OrgInfo<<T as frame_system::Trait>::AccountId, <<T as frame_system::Trait>::AccountId>::Balance>;
 pub type OrgCount = u32;
+
 type ProposalIdOf<T> = <T as frame_system::Trait>::Hash;
 type ProposalOf<T> = Proposal<
 	Vec<u8>,
-	<T as Trait>::ProposalMetadata,
+	ProposalDetailOf<T>,
 	<T as frame_system::Trait>::AccountId,
 	// <T as Trait>::VotingSystem,
 >;
@@ -82,6 +83,8 @@ decl_event!(
         ProposalFinalized(ProposalIdOf<T>, dispatch::DispatchResult),
         /// A proposal has been passed. \[proposal id]
         ProposalPassed(ProposalIdOf<T>),
+        /// create a proposal.		\[organization id,proposal id,creator]
+        ProposalCreated(AccountId,ProposalIdOf<T>,AccountId),
 	}
 );
 
@@ -95,6 +98,7 @@ decl_error! {
 		/// not found the proposal by id in the runtime storage
 		ProposalNotFound,
 		ProposalDecodeFailed,
+		ProposalDuplicate,
 	}
 }
 
