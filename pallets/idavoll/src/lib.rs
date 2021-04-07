@@ -85,6 +85,8 @@ decl_event!(
         ProposalPassed(ProposalIdOf<T>),
         /// create a proposal.		\[organization id,proposal id,creator]
         ProposalCreated(AccountId,ProposalIdOf<T>,AccountId),
+        /// Proposal Refused \[proposal id]
+        ProposalRefuse(AccountId),
 	}
 );
 
