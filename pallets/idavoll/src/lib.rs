@@ -21,11 +21,15 @@
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// https://substrate.dev/docs/en/knowledgebase/runtime/frame
 
-use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get};
+use frame_support::{decl_module, decl_storage, decl_event, decl_error,
+					dispatch, traits::{Get,EnsureOrigin},
+					Parameter,ensure};
 use frame_system::ensure_signed;
-use sp_runtime::{Permill, ModuleId, RuntimeDebug, traits::{
-	Zero, StaticLookup, AccountIdConversion, Saturating
-}};
+use sp_runtime::{Permill, ModuleId, RuntimeDebug,
+				 traits::{Zero, StaticLookup, AccountIdConversion,
+						  Saturating,AtLeast32BitUnsigned,AtLeast32Bit,
+				 }
+};
 
 #[cfg(test)]
 mod mock;
@@ -36,10 +40,10 @@ mod tests;
 mod organization;
 mod rules;
 mod voting;
-mod finance;
 mod utils;
 
 pub use organization::{OrgInfo, Proposal,OrganizationId,ProposalDetailOf};
+use idavoll_asset::{token::BaseToken};
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
@@ -47,18 +51,23 @@ pub trait Trait: frame_system::Trait {
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 	/// The idavoll's module id, used for deriving its sovereign account ID,use to organization id.
 	type ModuleId: Get<ModuleId>;
+	/// the Asset Handler will handle all op in the voting about asset operation.
+	type AssetHandle: BaseToken<Self::AccountId>;
+	type AssetId: Parameter + AtLeast32Bit + Default + Copy;
 }
 
 type BalanceOf<T> = <<T as frame_system::Trait>::AccountId>::Balance;
-type OrgInfoOf<T> = OrgInfo<<T as frame_system::Trait>::AccountId, <<T as frame_system::Trait>::AccountId>::Balance>;
 pub type OrgCount = u32;
-
+pub type OrgInfoOf<T> = OrgInfo<
+	<T as frame_system::Trait>::AccountId,
+	<<T as frame_system::Trait>::AccountId>::Balance,
+	T::AssetId,
+>;
 type ProposalIdOf<T> = <T as frame_system::Trait>::Hash;
 type ProposalOf<T> = Proposal<
 	Vec<u8>,
 	ProposalDetailOf<T>,
 	<T as frame_system::Trait>::AccountId,
-	// <T as Trait>::VotingSystem,
 >;
 
 // The pallet's runtime storage items.
@@ -97,10 +106,13 @@ decl_error! {
 		NoneValue,
 		/// need the maximum number for the storage value for the fixed type.
 		StorageOverflow,
+		OrganizationNotFound,
 		/// not found the proposal by id in the runtime storage
 		ProposalNotFound,
 		ProposalDecodeFailed,
 		ProposalDuplicate,
+		ProposalExpired,
+		NotMember,
 	}
 }
 

@@ -13,3 +13,63 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+use codec::FullCodec;
+use frame_support::traits::{BalanceStatus, LockIdentifier};
+use sp_runtime::{
+    traits::{AtLeast32BitUnsigned, MaybeSerializeDeserialize},
+    DispatchError, DispatchResult,
+};
+use sp_std::{
+    cmp::{Eq, PartialEq},
+    fmt::Debug,
+    result,
+};
+
+
+/// Abstraction trait over a multiple currencies system, each currency type
+/// is identified by a `AssetId`, if it is set to `None` when calling a
+/// function the implementation should default to the native currency of the
+/// runtime.
+pub trait BaseToken<AccountId> {
+    /// The type used to identify currencies
+    type AssetId: FullCodec + Eq + PartialEq + Copy + MaybeSerializeDeserialize + Debug + Default;
+
+    /// The balance of an account.
+    type Balance: AtLeast32BitUnsigned
+    + FullCodec
+    + Copy
+    + MaybeSerializeDeserialize
+    + Debug
+    + Default;
+
+    // PUBLIC IMMUTABLES
+
+    /// The total amount of the asset.
+    fn total(aid: Self::AssetId) -> Self::Balance;
+
+    /// Reduce the total tokens by `amount` and remove the `amount` tokens by `who`'s
+    /// account, return error if not enough tokens.
+    fn burn(aid: Self::AssetId, who: &AccountId, amount: Self::Balance) -> DispatchResult;
+
+    /// Increase the balance of `who` by `amount`,if there have the permission。
+    fn mint(aid: Self::AssetId, who: &AccountId, amount: Self::Balance) -> DispatchResult;
+
+    /// The 'free' balance of a given account.
+    fn free_balance_of(aid: Self::AssetId, who: &AccountId) -> Self::Balance;
+    /// The 'lock' balance of a given account.
+    fn lock_balance_of(aid: Self::AssetId, who: &AccountId) -> Self::Balance;
+    /// The total balance of a given account.
+    fn total_balance_of(aid: Self::AssetId, who: &AccountId) -> Self::Balance;
+
+    /// Transfer some free balance to another account.
+    fn transfer(aid: Self::AssetId, from: &AccountId, to: &AccountId, value: Self::Balance) -> DispatchResult;
+
+    /// Lock `value` from the free balance,return `Err` if the free balance is lower than `value`.
+    /// otherwise return `ok`.
+    fn lock(aid: Self::AssetId, who: &AccountId, value: Self::Balance) -> DispatchResult;
+
+    /// Unlock `value` from locked balance to free balance. This function cannot fail.
+    /// If the locked balance of `who` is less than `value`, then the remaining amount will be returned.
+    fn unlock(aid: Self::AssetId, who: &AccountId, value: Self::Balance) -> Self::Balance;
+}
