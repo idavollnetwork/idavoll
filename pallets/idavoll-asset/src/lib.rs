@@ -33,7 +33,7 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
-
+pub mod token;
 
 /// The module configuration trait.
 pub trait Trait: frame_system::Trait {
@@ -46,6 +46,7 @@ pub trait Trait: frame_system::Trait {
     /// The arithmetic type of asset identifier.
     type AssetId: Parameter + AtLeast32Bit + Default + Copy;
 }
+
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug)]
 pub struct AssetDetails<
     Balance: Encode + Decode + Clone + Debug + Eq + PartialEq,

@@ -20,7 +20,7 @@
 ///
 
 use frame_support::{
-    ensure,dispatch,
+    ensure,dispatch::{DispatchResult},
 };
 use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf, Module, RawEvent, Trait,
             OrgCount,OrgInfoOf};
@@ -39,9 +39,12 @@ use sp_runtime::traits::Hash;
 
 
 impl<T: Trait> Module<T> {
-    //
-    pub fn vote_on_proposal(oid: T::AccountId,pid: ProposalIdOf<T>) -> dispatch::DispatchResult {
+    /// 
+    pub fn vote_on_proposal(oid: T::AccountId,pid: ProposalIdOf<T>) -> DispatchResult {
         Ok(())
     }
 
+    pub fn close() -> DispatchResult {
+        Ok(())
+    }
 }
