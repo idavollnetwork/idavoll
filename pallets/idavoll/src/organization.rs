@@ -78,6 +78,12 @@ impl<AccountId: Ord, Balance> OrgInfo<AccountId, Balance> {
     pub fn sort(&mut self) {
         self.members.sort();
     }
+    pub fn is_member(&self,mid: AccountId) -> bool {
+        match self.members.iter().find(|&&x| mid.eq(&x)) {
+            Some(v) => true,
+            _ =>   false,
+        }
+    }
 }
 
 /// Represent a proposal as stored by the pallet.
@@ -119,7 +125,7 @@ impl<T: Trait> Module<T> {
 
         let proposal = Proposal{
             org:    oid.clone(),
-            call:   call.clone(),
+            call:   call.clone().encode(),
             detail: detail.clone(),
         };
         let proposal_id = proposal.clone().id();
@@ -131,6 +137,12 @@ impl<T: Trait> Module<T> {
     }
     fn make_proposal_id(proposal: ProposalOf<T>) -> ProposalIdOf<T> {
         proposal.clone().id()
+    }
+    pub fn is_member(oid: T::AccountId,who: &T::AccountId) -> bool {
+        match OrgInfo::<T>::try_get(oid) {
+            Ok(org) => org.is_member(who),
+            Err => false,
+        }
     }
     // add a member into a organization by orgid
     fn base_add_member_on_orgid(oid: T::AccountId,memberID: T::AccountId) -> dispatch::DispatchResult {
@@ -162,6 +174,9 @@ impl<T: Trait> Module<T> {
             let call = <T as Trait>::Call::decode(&mut &proposal.clone().call[..]).map_err(|_| Error::<T>::ProposalDecodeFailed)?;
             let res = call.dispatch(frame_system::RawOrigin::Signed(proposal.clone().org).into());
             Self::deposit_event(RawEvent::ProposalFinalized(pid, res.map(|_| ()).map_err(|e| e.error)));
+        } else {
+            Self::deposit_event(RawEvent::ProposalRefuse(pid));
+            return Ok(())
         }
         // remove the proposal
         Proposals::<T>::remove(pid);
