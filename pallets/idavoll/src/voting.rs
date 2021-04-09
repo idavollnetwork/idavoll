@@ -60,7 +60,7 @@ impl<T: Trait> Module<T> {
             if let Some(p) = proposal {
                 p.detail.vote(voter.clone(),value,yesorno)?;
                 *proposal = Some(p);
-            } ;
+            };
             Ok(())
         })?;
         // check the proposal can closed
@@ -68,7 +68,24 @@ impl<T: Trait> Module<T> {
     }
     /// close the proposal when the proposal was expire or passed.
     /// it will auto unlocked the voter's asset
-    pub fn try_close_proposal(oid: T::AccountId,pid: ProposalIdOf<T>,height: T::BlockNumber) -> DispatchResult {
+    pub fn try_close_proposal(aid: T::AssetId,pid: ProposalIdOf<T>,height: T::BlockNumber) -> DispatchResult {
+        let proposal = Self::get_proposal_by_id(pid)?;
+        let is_expire = proposal.detail.is_expire(height);
+        let is_pass = Self.is_pass(proposal.clone());
+        if is_pass {
+            // remove the proposal from the storage
+            let call = <T as Trait>::Call::decode(&mut &proposal.clone().call[..]).map_err(|_| Error::<T>::ProposalDecodeFailed)?;
+            let res = call.dispatch(frame_system::RawOrigin::Signed(proposal.clone().org).into());
+            Self::deposit_event(RawEvent::ProposalFinalized(pid, res.map(|_| ()).map_err(|e| e.error)));
+        }
+        if is_expire || is_pass {
+            let clone_proposal = proposal.clone();
+            Proposals::<T>::remove(pid);
+            clone_proposal.detail.votes.iter().for_each(|val|{
+                T::AssetHandle::unlock(aid,val.0.clone(),val.1.0.clone());
+            });
+            Self::deposit_event(RawEvent::ProposalPassed(pid));
+        }
         Ok(())
     }
 }

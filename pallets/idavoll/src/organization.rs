@@ -229,20 +229,4 @@ impl<T: Trait> Module<T> {
     fn is_pass(proposal: ProposalOf<T>) -> bool {
         return true
     }
-    // a proposal has been voted,it will be finalized once by anyone in org,
-    fn base_proposal_finalize(pid: ProposalIdOf<T>) -> dispatch::DispatchResult {
-        let proposal = Self::get_proposal_by_id(pid)?;
-        if Self::is_pass(proposal.clone()) {
-            let call = <T as Trait>::Call::decode(&mut &proposal.clone().call[..]).map_err(|_| Error::<T>::ProposalDecodeFailed)?;
-            let res = call.dispatch(frame_system::RawOrigin::Signed(proposal.clone().org).into());
-            Self::deposit_event(RawEvent::ProposalFinalized(pid, res.map(|_| ()).map_err(|e| e.error)));
-        } else {
-            Self::deposit_event(RawEvent::ProposalRefuse(pid));
-            return Ok(())
-        }
-        // remove the proposal
-        Proposals::<T>::remove(pid);
-        Self::deposit_event(RawEvent::ProposalPassed(pid));
-        Ok(())
-    }
 }
