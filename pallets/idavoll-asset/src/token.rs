@@ -17,7 +17,7 @@
 use codec::FullCodec;
 use frame_support::traits::{BalanceStatus, LockIdentifier};
 use sp_runtime::{
-    traits::{AtLeast32BitUnsigned, MaybeSerializeDeserialize},
+    traits::{AtLeast32BitUnsigned, MaybeSerializeDeserialize,Saturating},
     DispatchError, DispatchResult,
 };
 use sp_std::{

@@ -40,6 +40,7 @@ mod tests;
 mod organization;
 mod rules;
 mod voting;
+mod finance;
 mod utils;
 
 pub use organization::{OrgInfo, Proposal,OrganizationId,ProposalDetailOf};
@@ -113,6 +114,7 @@ decl_error! {
 		ProposalDuplicate,
 		ProposalExpired,
 		NotMember,
+		WrongRuleParam,
 	}
 }
 
