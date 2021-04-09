@@ -25,6 +25,7 @@ use sp_std::{
     fmt::Debug,
     result,
 };
+use crate::{Trait,Module};
 
 
 /// Abstraction trait over a multiple currencies system, each currency type
@@ -72,4 +73,55 @@ pub trait BaseToken<AccountId> {
     /// Unlock `value` from locked balance to free balance. This function cannot fail.
     /// If the locked balance of `who` is less than `value`, then the remaining amount will be returned.
     fn unlock(aid: Self::AssetId, who: &AccountId, value: Self::Balance) -> Self::Balance;
+}
+
+
+impl<T: Trait> BaseToken<T::AccountId> for Module<T> {
+    type AssetId = T::AssetId;
+    type Balance = T::Balance;
+
+    fn total(aid: Self::AssetId) -> Self::Balance {
+        Self::total_issuances(aid)
+    }
+    /// The 'free' balance of a given account.
+    fn free_balance_of(aid: Self::AssetId, who: &AccountId) -> Self::Balance {
+        Self::free_balance(aid,who)
+    }
+    /// The 'lock' balance of a given account.
+    fn lock_balance_of(aid: Self::AssetId, who: &AccountId) -> Self::Balance {
+        let all = Self::total_balance(aid,who);
+        let free = Self::free_balance(aid,who);
+        return all.saturating_sub(free)
+    }
+    /// The total balance of a given account.
+    fn total_balance_of(aid: Self::AssetId, who: &AccountId) -> Self::Balance {
+        Self::total_balance(aid,who)
+    }
+
+    /// Reduce the total tokens by `amount` and remove the `amount` tokens by `who`'s
+    /// account, return error if not enough tokens.
+    fn burn(aid: Self::AssetId, who: &AccountId, amount: Self::Balance) -> DispatchResult {
+        Self::base_burn(aid,who,amount)
+    }
+    /// Increase the balance of `who` by `amount`,if there have the permission。
+    fn mint(aid: Self::AssetId, who: &AccountId, amount: Self::Balance) -> DispatchResult {
+        Self::base_mint(aid,who,amount)
+    }
+
+    /// Transfer some free balance to another account.
+    fn transfer(aid: Self::AssetId, from: &AccountId, to: &AccountId, value: Self::Balance) -> DispatchResult {
+        Self::base_transfer(aid,from,to,value)
+    }
+
+    /// Lock `value` from the free balance,return `Err` if the free balance is lower than `value`.
+    /// otherwise return `ok`.
+    fn lock(aid: Self::AssetId, who: &AccountId, value: Self::Balance) -> DispatchResult {
+        Self::base_lock(aid,who,value)
+    }
+
+    /// Unlock `value` from locked balance to free balance. This function cannot fail.
+    /// If the locked balance of `who` is less than `value`, then the remaining amount will be returned.
+    fn unlock(aid: Self::AssetId, who: &AccountId, value: Self::Balance) -> Self::Balance{
+        Self::base_unlock(aid,who,value)
+    }
 }
