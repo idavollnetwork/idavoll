@@ -17,18 +17,26 @@
 
 
 
-use frame_support::{ ensure,dispatch };
+use frame_support::{ ensure,dispatch::{DispatchResult} };
 #[cfg(feature = "std")]
 use std::collections::{HashMap as Map, hash_map::Entry as MapEntry};
+use sp_runtime::{
+    RuntimeDebug,Perbill,
+    traits::{Saturating, Zero,Hash},
+};
 #[cfg(not(feature = "std"))]
 use sp_std::collections::btree_map::{BTreeMap as Map, Entry as MapEntry};
 
 use crate::utils::*;
+use crate::{ Error,Module, RawEvent, Trait,
+            OrgCount,OrgInfoOf,BalanceOf};
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
 pub const LengthLimit01: i32 = 32;
 pub const MaxRuleNumber: u32 = 10_000;
 
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
+
 
 
 pub trait BaseRule {
@@ -39,24 +47,51 @@ pub trait BaseRule {
 
     /// i
     fn on_proposal_pass(height: Self::BlockNumber,content: Self::Data,detail: Self::Params) -> bool;
-    fn on_proposal_expired(height: Self::BlockNumber,detail: Self::Params) -> dispatch::DispatchResult;
-    fn on_can_close(creator: Self::AccountId,detail: Self::Params) -> dispatch::DispatchResult;
+    fn on_proposal_expired(height: Self::BlockNumber,detail: Self::Params) -> DispatchResult;
+    fn on_can_close(creator: Self::AccountId,detail: Self::Params) -> DispatchResult;
 }
 
 #[derive(Debug, Default, Clone,Eq)]
 pub struct OrgRuleParam<Balance> {
+    /// Minimum approval votes threshold in a organization
     pub minAffirmative: Balance,
+    /// Maximum negative votes threshold in a organization
     pub maxDissenting:  Balance,
+    /// the abstention votes threshold in a organization,More than a certain
+    /// number of abstentions on the proposal then it will gradually become invalid
     pub abstention: Balance,
 }
 
-impl <Balance> OrgRuleParam<Balance> {
+impl<Balance> OrgRuleParam<Balance> {
     pub fn default() -> Self {
         Self{
-            minAffirmative: Balance::default(),
-            maxDissenting: Balance::default(),
-            abstention: Balance::default(),
+            minAffirmative: Zero::zero(),
+            maxDissenting: Zero::zero(),
+            abstention: Zero::zero(),
         }
+    }
+    pub fn is_pass(&self,yes_amount: Balance,no_amount: Balance,nu_amount: Balance,total: Balance) -> bool {
+        if self.minAffirmative == Zero::zero() {
+            // must be 100% approval
+            return yes_amount >= total
+        } else {
+            if self.maxDissenting != Zero::zero() {
+                return !(no_amount > Perbill::from_percent(self.maxDissenting.clone()) * total)
+            }
+            if self.abstention != Zero::zero() {
+                return !(nu_amount > Perbill::from_percent(self.abstention.clone()) * total)
+            }
+            return yes_amount > Perbill::from_percent(self.minAffirmative.clone()) * total
+        }
+        false
+    }
+    pub fn inherit_valid(&self,param: OrgRuleParam<Balance>) -> DispatchResult {
+        if param.minAffirmative >= self.minAffirmative
+            && param.maxDissenting <= self.maxDissenting
+            && param.abstention <= self.abstention {
+            Ok(())
+        }
+        Err(Error::<T>::WrongRuleParam.into())
     }
 }
 

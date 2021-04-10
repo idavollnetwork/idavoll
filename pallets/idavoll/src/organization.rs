@@ -118,10 +118,9 @@ impl<AssetId> AssetInfo<AssetId> {
 pub struct OrgInfo<AccountId, Balance,AssetId> {
     /// A set of accounts of an organization.
     pub members: Vec<AccountId>,
-
     /// params for every organization,will set on create organization
     pub param:  OrgRuleParam<Balance>,
-
+    /// only one asset for one organization
     pub asset: AssetInfo<AssetId>,
 }
 
