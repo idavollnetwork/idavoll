@@ -20,11 +20,13 @@
 
 use sp_std::{fmt::Debug};
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch,
-                    traits::{Get,EnsureOrigin},
+                    traits::{Get,EnsureOrigin,Currency, ReservableCurrency},
                     Parameter,ensure};
 use frame_system::ensure_signed;
-use sp_runtime::{RuntimeDebug, traits::{AtLeast32Bit,One,Zero,
-    Member, AtLeast32BitUnsigned, StaticLookup, Saturating, CheckedSub, CheckedAdd
+use sp_runtime::{RuntimeDebug, ModuleId,
+                 traits::{AtLeast32Bit,One,Zero,Member, AtLeast32BitUnsigned,
+                          StaticLookup, Saturating, CheckedSub, CheckedAdd
+
 }};
 use codec::{Encode, Decode, HasCompact};
 
@@ -34,9 +36,15 @@ mod mock;
 #[cfg(test)]
 mod tests;
 pub mod token;
+pub mod finance;
 
 /// The module configuration trait.
 pub trait Trait: frame_system::Trait {
+    /// The treasury's module id, used for deriving its sovereign account ID.
+    type ModuleId: Get<ModuleId>;
+
+    /// The staking balance.
+    type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
