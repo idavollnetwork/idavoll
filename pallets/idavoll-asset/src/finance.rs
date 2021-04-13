@@ -38,6 +38,14 @@ use codec::{Decode, Encode};
 /// An index of a bounty. Just a `u32`.
 pub type BountyIndex = u32;
 
+pub trait BaseFinance<AccountId,Balance> {
+    /// return the balance of the organization's Vault,it reserved by the members of the organization
+    fn balance_of(oid: AccountId) -> Result<Balance,DispatchError>;
+    ///
+    fn reserve_to_org(oid: AccountId,who: AccountId,value: Balance) -> DispatchResult;
+    fn transfer(oid: AccountId,to: AccountId,value: Balance) -> DispatchResult;
+}
+
 
 impl<T: Trait> Module<T> {
     /// The account ID of the idv-asset pot.
@@ -76,14 +84,27 @@ impl<T: Trait> Module<T> {
             })
     }
     /// transfer the balance to `to` from finance's Vault by Call<> function
-    pub fn transfer(oid: T::AccountId,to: T::AccountId,value: T::Balance) -> DispatchResult {
+    pub fn spend_organization_Vault(oid: T::AccountId,to: T::AccountId,value: T::Balance) -> DispatchResult {
         let Vault_balance = Self::Vault_balance_of(oid.clone())?;
-        ensure!(balance >= value,Error::<T>::BalanceLow);
+        ensure!(Vault_balance >= value,Error::<T>::BalanceLow);
         let Vault_account = Self::account_id();
         T::Currency::transfer(&Vault_account,&to,value,AllowDeath)?;
         Finances::<T>::try_mutate_exists(oid,|x|{
             *x = x.saturating_sub(value.clone());
             Ok(())
         })
+    }
+}
+
+impl<T: Trait> BaseFinance<T::AccountId,T::Balance> for Module<T> {
+    fn balance_of(oid: AccountId) -> Result<Balance,DispatchError> {
+        Self::Vault_balance_of(oid)
+    }
+
+    fn reserve_to_org(oid: AccountId,who: AccountId,value: Balance) -> DispatchResult {
+        Self::transfer_to_Vault(oid,who,value)
+    }
+    fn transfer(oid: AccountId,to: AccountId,value: Balance) -> DispatchResult {
+        Self::spend_organization_Vault(oid,to,value)
     }
 }

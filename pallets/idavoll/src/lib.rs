@@ -40,11 +40,10 @@ mod tests;
 mod organization;
 mod rules;
 mod voting;
-mod finance;
 mod utils;
 
 pub use organization::{OrgInfo, Proposal,OrganizationId,ProposalDetailOf};
-use idavoll_asset::{token::BaseToken};
+use idavoll_asset::{token::BaseToken,finance::BaseFinance};
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
@@ -54,6 +53,8 @@ pub trait Trait: frame_system::Trait {
 	type ModuleId: Get<ModuleId>;
 	/// the Asset Handler will handle all op in the voting about asset operation.
 	type AssetHandle: BaseToken<Self::AccountId>;
+	/// keep the local asset(idv) of the organization
+	type Finance: BaseFinance<Self::AccountId,Self::Balance>;
 	type AssetId: Parameter + AtLeast32Bit + Default + Copy;
 }
 
