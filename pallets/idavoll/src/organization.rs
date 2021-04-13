@@ -38,10 +38,6 @@ use sp_runtime::{
 use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
 
 pub type OrganizationId = u64;
-pub trait DefaultAction {
-    fn change_organization_name() -> dispatch::DispatchResult;
-    fn transfer() -> dispatch::DispatchResult;
-}
 
 /// this is the free proposal,every one in the organization can create
 /// the proposal for pay a little fee, it not staking any asset to do this.
