@@ -130,6 +130,8 @@ decl_storage! {
 	trait Store for Module<T: Trait> as IdavollAsset {
 		/// The number of units of assets held by any given account.
 		pub Balances: map hasher(blake2_128_concat) (T::AssetId, T::AccountId) => AccountAssetMetadata<T::Balance>;
+		/// record the balance of the local asset(idv) for every organization
+		pub Finances: map hasher(blake2_128_concat) T::AccountId => T::Balance;
 		/// The next asset identifier up for grabs.
 		NextAssetId get(fn next_asset_id): T::AssetId;
         // pub Locks get(fn locks): double_map hasher(blake2_128_concat) (T::AssetId, T::AccountId), hasher(blake2_128_concat) LockIdentifier => T::Balance;
@@ -143,7 +145,8 @@ decl_module! {
 		type Error = Error<T>;
 
 		fn deposit_event() = default;
-
+        /// The idv-asset's module id, used for deriving its sovereign account ID.
+		const ModuleId: ModuleId = T::ModuleId::get();
 		/// Move some assets from one holder to another.
 		#[weight = 0]
 		fn transfer(origin,

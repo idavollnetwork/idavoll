@@ -83,7 +83,6 @@ impl<Balance> OrgRuleParam<Balance> {
             }
             return yes_amount > Perbill::from_percent(self.minAffirmative.clone()) * total
         }
-        false
     }
     pub fn inherit_valid(&self,param: OrgRuleParam<Balance>) -> DispatchResult {
         if param.minAffirmative >= self.minAffirmative
@@ -99,7 +98,17 @@ impl<Balance> OrgRuleParam<Balance> {
     Action  ==> innerAction
     Action  ==> financeAction
 */
+pub trait DefaultAction {
+    fn change_organization_name() -> DispatchResult;
+    fn transfer() -> DispatchResult;
+}
 
+pub trait InnerAction: DefaultAction {
+
+}
+pub trait FinanceAction: DefaultAction {
+
+}
 
 
 
