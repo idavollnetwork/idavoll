@@ -24,17 +24,14 @@ use frame_support::{
     sp_std::collections::btree_map::BTreeMap,
 };
 use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf,Error,
-            Module, RawEvent, Trait,
-            OrgCount,OrgInfoOf};
+            Module, RawEvent, Trait, OrgCount,OrgInfoOf};
 use crate::utils::*;
 use crate::rules::{BaseRule,OrgRuleParam};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
-use sp_runtime::{
-    RuntimeDebug,traits::{Saturating, Zero,Hash},
-};
+use sp_runtime::{RuntimeDebug, traits::{Saturating, Zero, Hash}, DispatchResult};
 use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
 
 pub type OrganizationId = u64;
@@ -106,6 +103,9 @@ impl<AssetId> AssetInfo<AssetId> {
     pub fn id(&self) -> AssetId {
         self.id.clone()
     }
+    pub fn set_id(&mut self,id: AssetId) {
+        self.id = id
+    }
 }
 
 /// This structure is used to encode metadata about an organization.
@@ -121,6 +121,13 @@ pub struct OrgInfo<AccountId, Balance,AssetId> {
 }
 
 impl<AccountId: Ord, Balance,AssetId> OrgInfo<AccountId, Balance,AssetId> {
+    pub fn new() -> Self {
+        Self{
+            members: Vec::new(),
+            param: OrgRuleParam::default(),
+            asset: AssetInfo::default(),
+        }
+    }
     /// Sort all the vectors inside the strutcture.
     pub fn sort(&mut self) {
         self.members.sort();
@@ -133,6 +140,15 @@ impl<AccountId: Ord, Balance,AssetId> OrgInfo<AccountId, Balance,AssetId> {
     }
     pub fn get_asset_id(&self) -> AssetId {
         self.asset.id()
+    }
+    pub fn set_asset_id(&mut self,id: AssetId) {
+        self.asset.set_id(id)
+    }
+    pub fn add_member(&mut self, member: AccountId) -> DispatchResult {
+        if !self.is_member(member.clone()) {
+            self.members.push(member.clone());
+        }
+        Ok(())
     }
 }
 
@@ -157,7 +173,7 @@ impl<Call,Metadata, OrganizationId> Proposal<Call,Metadata, OrganizationId> {
 
 
 
-impl<T: Trait> Module<T> {
+impl<T: Trait> Module<T>  {
     // be accountid of organization id for orginfos in the storage
     pub fn counter2Orgid(c: OrgCount) -> T::AccountId {
         Self::ModuleId.into_sub_account(c)
@@ -168,7 +184,7 @@ impl<T: Trait> Module<T> {
             Ok(org) => Ok(org),
         }
     }
-    fn create_org(oinfo: OrgInfoOf<T>) -> dispatch::DispatchResult {
+    pub fn create_org(oinfo: OrgInfoOf<T>) -> dispatch::DispatchResult {
         let counter = Counter::<T>::get();
         let new_counter = counter.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
         let oid = Self::counter2Orgid(counter);

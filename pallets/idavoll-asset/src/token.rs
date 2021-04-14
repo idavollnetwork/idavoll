@@ -46,6 +46,8 @@ pub trait BaseToken<AccountId> {
 
     // PUBLIC IMMUTABLES
 
+    /// create the new token
+    fn create(owner: AccountId,total: Self::Balance) -> Self::AssetId;
     /// The total amount of the asset.
     fn total(aid: Self::AssetId) -> Self::Balance;
 
@@ -80,6 +82,10 @@ impl<T: Trait> BaseToken<T::AccountId> for Module<T> {
     type AssetId = T::AssetId;
     type Balance = T::Balance;
 
+
+    fn create(owner: AccountId,total: Self::Balance) -> Self::AssetId {
+        Self::create_token(owner,total)
+    }
     fn total(aid: Self::AssetId) -> Self::Balance {
         Self::total_issuances(aid)
     }
