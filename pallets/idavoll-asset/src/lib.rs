@@ -185,7 +185,7 @@ impl<T: Trait> Module<T> {
     /// Issue a new class of fungible assets. There are, and will only ever be, `total`
     /// such assets and they'll all belong to the `origin` initially. It will have an
     /// identifier `AssetId` instance: this will be specified in the `Issued` event.
-    fn create(owner: T::AccountId,total: T::Balance) {
+    fn create_token(owner: T::AccountId,total: T::Balance) -> T::AssetId {
 
         let id = Self::next_asset_id();
         <NextAssetId<T>>::mutate(|id| *id += One::one());
@@ -203,6 +203,7 @@ impl<T: Trait> Module<T> {
         <Balances<T>>::insert((id, owner.clone()), meta);
 
         Self::deposit_event(RawEvent::Issued(id, owner, total));
+        id
     }
 
     /// Move some assets from one holder to another.

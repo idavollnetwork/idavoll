@@ -88,4 +88,8 @@ impl<T: Trait> Module<T> {
         }
         Ok(())
     }
+    /// create new token with new organization
+    pub fn create_new_token(owner: T::AccountId,total: T::Balance) -> T::AssetId {
+        T::AssetHandle::create(owner,total)
+    }
 }

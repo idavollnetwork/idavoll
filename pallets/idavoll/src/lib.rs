@@ -23,7 +23,8 @@
 
 use frame_support::{decl_module, decl_storage, decl_event, decl_error,
 					dispatch, traits::{Get,EnsureOrigin},
-					Parameter,ensure};
+					Parameter,ensure,weights::{GetDispatchInfo, Weight},
+};
 use frame_system::ensure_signed;
 use sp_runtime::{Permill, ModuleId, RuntimeDebug,
 				 traits::{Zero, StaticLookup, AccountIdConversion,
@@ -41,9 +42,17 @@ mod organization;
 mod rules;
 mod voting;
 mod utils;
+mod default_weights;
 
 pub use organization::{OrgInfo, Proposal,OrganizationId,ProposalDetailOf};
 use idavoll_asset::{token::BaseToken,finance::BaseFinance};
+
+pub trait WeightInfo {
+	fn create_origanization(b: u32) -> Weight;
+	fn create_proposal() -> Weight;
+	fn veto_proposal(b: u32, c: u32) -> Weight;
+	fn finish_proposal(b: u32, c: u32) -> Weight;
+}
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
@@ -148,27 +157,17 @@ decl_module! {
 			Ok(())
 		}
 
-		/// An example dispatchable that may throw a custom error.
+		/// create organization with the assetID=0,this will create the token for voting proposal
+		/// and the token will assgined to the creator
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
-		pub fn cause_error(origin) -> dispatch::DispatchResult {
-			let _who = ensure_signed(origin)?;
-
-			// Read a value from storage.
-			match Something::get() {
-				// Return an error if the value has not been set.
-				None => Err(Error::<T>::NoneValue)?,
-				Some(old) => {
-					// Increment the value read from storage; will error in the event of overflow.
-					let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-					// Update the value in storage with the incremented result.
-					Something::put(new);
-					Ok(())
-				},
-			}
+		pub fn create_origanization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
+			let owner = ensure_signed(origin)?;
+			let asset_id = Self::create_new_token(owner.clone(),total);
+			let info_clone = info.clone();
+			info_clone.add_member(owner.clone());
+			info_clone.set_asset_id(asset_id.clone());
+			Self::create_org(info_clone.clone())
 		}
+
 	}
-}
-
-impl<T: Trait> Module<T> {
-
 }
