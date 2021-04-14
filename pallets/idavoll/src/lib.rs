@@ -117,6 +117,7 @@ decl_error! {
 		/// need the maximum number for the storage value for the fixed type.
 		StorageOverflow,
 		OrganizationNotFound,
+		NotOwnerByOrg,
 		/// not found the proposal by id in the runtime storage
 		ProposalNotFound,
 		ProposalDecodeFailed,
@@ -172,8 +173,11 @@ decl_module! {
 		}
 		/// voting on the proposal by the members in the organization
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
-		pub fn finish_proposal(origin) -> dispatch::DispatchResult {
-			Ok(())
+		pub fn add_member_by_onwer(origin,target: <T::Lookup as StaticLookup>::Source,id: u32) -> dispatch::DispatchResult {
+			let owner = ensure_signed(origin)?;
+			let who = T::Lookup::lookup(target)?;
+
+			Self::on_add_member(owner,who,id)
 		}
 	}
 }
