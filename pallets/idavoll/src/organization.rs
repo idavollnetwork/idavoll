@@ -217,6 +217,16 @@ impl<T: Trait> Module<T>  {
         };
         Self::base_create_proposal(oid.clone(),proposal)
     }
+    pub fn on_vote_proposal(pid: ProposalIdOf<T>,who: T::AccountId,value: T::Balance,yesorno: bool,cur: T::BlockNumber) -> dispatch::DispatchResult {
+        let proposal = Self::get_proposal_by_id(pid)?;
+        Self::vote_on_proposal(proposal.org,pid,who.clone(),value,yesorno,cur)
+    }
+    pub fn on_add_member(owner: T::AccountId,who: T::AccountId,id: u32) -> dispatch::DispatchResult {
+        let oid = Self::counter2Orgid(id);
+        let org = Self::get_orginfo_by_id(oid)?;
+        ensure!(Self::is_member(oid,owner),Error::<T>::NotOwnerByOrg);
+        Self::base_add_member_on_orgid(oid.clone(),who.clone())
+    }
     fn base_create_proposal(oid: T::AccountId,proposal: ProposalOf<T>) -> dispatch::DispatchResult {
 
         let proposal_id = proposal.clone().id();

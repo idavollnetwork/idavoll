@@ -117,6 +117,7 @@ decl_error! {
 		/// need the maximum number for the storage value for the fixed type.
 		StorageOverflow,
 		OrganizationNotFound,
+		NotOwnerByOrg,
 		/// not found the proposal by id in the runtime storage
 		ProposalNotFound,
 		ProposalDecodeFailed,
@@ -163,6 +164,20 @@ decl_module! {
 			let cur = frame_system::Module::<T>::block_number();
 			let expiry = cur.saturating_add(length);
 			Self::on_create_proposal(id,who,expire,call)
+		}
+		/// voting on the proposal by the members in the organization
+		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		pub fn vote_proposal(origin,pid: ProposalIdOf<T>,value: T::Balance,yesorno: bool) -> dispatch::DispatchResult {
+			let who = ensure_signed(origin)?;
+			Self::on_vote_proposal(pid,who,value,yesorno,frame_system::Module::<T>::block_number())
+		}
+		/// voting on the proposal by the members in the organization
+		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		pub fn add_member_by_onwer(origin,target: <T::Lookup as StaticLookup>::Source,id: u32) -> dispatch::DispatchResult {
+			let owner = ensure_signed(origin)?;
+			let who = T::Lookup::lookup(target)?;
+
+			Self::on_add_member(owner,who,id)
 		}
 	}
 }
