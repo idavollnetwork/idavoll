@@ -88,7 +88,6 @@ decl_storage! {
 		pub Counter get(fn counter): OrgCount = 0;
 		pub OrgInfos get(fn OrgInfos): map hasher(blake2_128_concat) T::AccountId => Option<OrgInfoOf<T>>;
         pub Proposals get(fn proposals): map hasher(blake2_128_concat) ProposalIdOf<T> => Option<ProposalOf<T>>;
-		Something get(fn something): Option<u32>;
 	}
 }
 
@@ -139,25 +138,7 @@ decl_module! {
 		// Events must be initialized if they are used by the pallet.
 		fn deposit_event() = default;
 
-		/// An example dispatchable that takes a singles value as a parameter, writes the value to
-		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
-		#[weight = 10_000 + T::DbWeight::get().writes(1)]
-		pub fn do_something(origin, something: u32) -> dispatch::DispatchResult {
-			// Check that the extrinsic was signed and get the signer.
-			// This function will return an error if the extrinsic is not signed.
-			// https://substrate.dev/docs/en/knowledgebase/runtime/origin
-			let who = ensure_signed(origin)?;
-
-			// Update storage.
-			Something::put(something);
-
-			// Emit an event.
-			Self::deposit_event(RawEvent::SomethingStored(something, who));
-			// Return a successful DispatchResult
-			Ok(())
-		}
-
-		/// create organization with the assetID=0,this will create the token for voting proposal
+		/// create organization with the assetID=0,this will create new token for voting proposal
 		/// and the token will assgined to the creator
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
 		pub fn create_origanization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
@@ -168,6 +149,20 @@ decl_module! {
 			info_clone.set_asset_id(asset_id.clone());
 			Self::create_org(info_clone.clone())
 		}
-
+		/// reserve the local asset(idv) to organization's Vault, it used to assigned by the proposal
+		/// of call function
+		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		pub fn deposit_to_origanization(origin,id: u32,value: T::Balance) -> dispatch::DispatchResult {
+			let who = ensure_signed(origin)?;
+			Self::reserve_to_Vault(id,who,value)
+		}
+		/// create proposal in the organization for voting by members
+		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		pub fn create_proposal(origin,id: u32,length: T::BlockNumber,call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {
+			let who = ensure_signed(origin)?;
+			let cur = frame_system::Module::<T>::block_number();
+			let expiry = cur.saturating_add(length);
+			Self::on_create_proposal(id,who,expire,call)
+		}
 	}
 }
