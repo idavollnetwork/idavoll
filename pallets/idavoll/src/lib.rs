@@ -164,5 +164,16 @@ decl_module! {
 			let expiry = cur.saturating_add(length);
 			Self::on_create_proposal(id,who,expire,call)
 		}
+		/// voting on the proposal by the members in the organization
+		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		pub fn vote_proposal(origin,pid: ProposalIdOf<T>,value: T::Balance,yesorno: bool) -> dispatch::DispatchResult {
+			let who = ensure_signed(origin)?;
+			Self::on_vote_proposal(pid,who,value,yesorno,frame_system::Module::<T>::block_number())
+		}
+		/// voting on the proposal by the members in the organization
+		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		pub fn finish_proposal(origin) -> dispatch::DispatchResult {
+			Ok(())
+		}
 	}
 }
