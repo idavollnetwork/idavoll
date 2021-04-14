@@ -163,7 +163,14 @@ pub struct Proposal<Call, ProposalDetail, OrganizationId> {
     pub detail: ProposalDetail,
 }
 
-impl<Call,Metadata, OrganizationId> Proposal<Call,Metadata, OrganizationId> {
+impl<Call,ProposalDetail, OrganizationId> Proposal<Call,ProposalDetail, OrganizationId> {
+    pub fn new(id: OrganizationId,calldata: Call,detail: ProposalDetail) -> Self {
+        Self{
+            org: id,
+            call: calldata,
+            detail: detail,
+        }
+    }
     // get proposal id by hash the content in the proposal
     pub fn id(&mut self) -> Trait::Hash {
         Trait::Hashing::hash_of(&[self.encode()])
@@ -194,19 +201,30 @@ impl<T: Trait> Module<T>  {
         Counter::<T>::put(new_counter);
         Ok(())
     }
-    fn base_create_proposal(oid: T::AccountId,detail: ProposalDetailOf<T>,call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {
-
-        let proposal = Proposal{
+    pub fn reserve_to_Vault(id: u32,who: T::AccountId,value: T::Balance) -> DispatchResult {
+        let oid = Self::counter2Orgid(id);
+        let org = Self::get_orginfo_by_id(oid)?;
+        T::Finance::reserve_to_org(oid.clone(),who.clone(),value)
+    }
+    pub fn on_create_proposal(id:u32,who: T::AccountId,expire: T::BlockNumber
+                              ,call: Box<<T as Trait>::Call>) ->dispatch::DispatchResult {
+        let oid = Self::counter2Orgid(id);
+        let org = Self::get_orginfo_by_id(oid)?;
+        let proposal = Proposal {
             org:    oid.clone(),
-            call:   call.clone().encode(),
-            detail: detail.clone(),
+            call: call.encode(),
+            detail: ProposalDetail::new(who.clone(),expire),
         };
+        Self::base_create_proposal(oid.clone(),proposal)
+    }
+    fn base_create_proposal(oid: T::AccountId,proposal: ProposalOf<T>) -> dispatch::DispatchResult {
+
         let proposal_id = proposal.clone().id();
         if Proposals::<T>::contains_key(proposal_id) {
             return Err(Error::<T>::ProposalDuplicate.into());
         }
         Proposals::<T>::insert(&proposal_id, proposal.clone());
-        Self::deposit_event(RawEvent::ProposalCreated(target_org_id, proposal_id,detail.creator.clone()));
+        Self::deposit_event(RawEvent::ProposalCreated(oid, proposal_id,detail.creator.clone()));
     }
     fn make_proposal_id(proposal: ProposalOf<T>) -> ProposalIdOf<T> {
         proposal.clone().id()
@@ -240,4 +258,5 @@ impl<T: Trait> Module<T>  {
     fn is_pass(proposal: ProposalOf<T>) -> bool {
         return true
     }
+
 }
