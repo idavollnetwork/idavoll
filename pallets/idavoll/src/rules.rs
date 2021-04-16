@@ -84,10 +84,10 @@ impl<Balance> OrgRuleParam<Balance> {
             return yes_amount > Perbill::from_percent(self.minAffirmative.clone()) * total
         }
     }
-    pub fn inherit_valid(&self,param: OrgRuleParam<Balance>) -> DispatchResult {
-        if param.minAffirmative >= self.minAffirmative
-            && param.maxDissenting <= self.maxDissenting
-            && param.abstention <= self.abstention {
+    pub fn inherit_valid(&self,subparam: OrgRuleParam<Balance>) -> DispatchResult {
+        if subparam.minAffirmative >= self.minAffirmative
+            && subparam.maxDissenting <= self.maxDissenting
+            && subparam.abstention <= self.abstention {
             Ok(())
         }
         Err(Error::<T>::WrongRuleParam.into())
