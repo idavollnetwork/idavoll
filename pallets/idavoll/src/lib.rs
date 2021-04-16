@@ -46,6 +46,7 @@ mod default_weights;
 
 pub use organization::{OrgInfo, Proposal,OrganizationId,ProposalDetailOf};
 use idavoll_asset::{token::BaseToken,finance::BaseFinance};
+use rules::{OrgRuleParam};
 
 pub trait WeightInfo {
 	fn create_origanization(b: u32) -> Weight;
@@ -74,12 +75,13 @@ pub type OrgInfoOf<T> = OrgInfo<
 	<<T as frame_system::Trait>::AccountId>::Balance,
 	T::AssetId,
 >;
-type ProposalIdOf<T> = <T as frame_system::Trait>::Hash;
-type ProposalOf<T> = Proposal<
+pub type ProposalIdOf<T> = <T as frame_system::Trait>::Hash;
+pub type ProposalOf<T> = Proposal<
 	Vec<u8>,
 	ProposalDetailOf<T>,
 	<T as frame_system::Trait>::AccountId,
 >;
+pub type OrgRuleParamOf<T> = OrgRuleParam<<<T as frame_system::Trait>::AccountId>::Balance>;
 
 // The pallet's runtime storage items.
 // https://substrate.dev/docs/en/knowledgebase/runtime/storage
@@ -159,7 +161,8 @@ decl_module! {
 		}
 		/// create proposal in the organization for voting by members
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
-		pub fn create_proposal(origin,id: u32,length: T::BlockNumber,call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {
+		pub fn create_proposal(origin,id: u32,length: T::BlockNumber,sub_param: OrgRuleParamOf<T>,
+		,call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
 			let cur = frame_system::Module::<T>::block_number();
 			let expiry = cur.saturating_add(length);

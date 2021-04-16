@@ -23,10 +23,10 @@ use frame_support::{
 	ensure,dispatch,
     sp_std::collections::btree_map::BTreeMap,
 };
-use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf,Error,
-            Module, RawEvent, Trait, OrgCount,OrgInfoOf};
 use crate::utils::*;
 use crate::rules::{BaseRule,OrgRuleParam};
+use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf,Error,
+            Module, RawEvent, Trait, OrgCount,OrgInfoOf,OrgRuleParamOf};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -50,14 +50,18 @@ pub struct ProposalDetail<AccountId, Balance, BlockNumber>
     pub creator: AccountId,
     /// the end datetime of the proposal,it set by created.
     pub end_dt: BlockNumber,
+    /// the user-default param for the vote rule in the proposal.
+    /// it must be in range of the organization's param
+    pub sub_param: OrgRuleParam<Balance>,
 }
 
 impl<AccountId, Balance, BlockNumber> ProposalDetail<AccountId, Balance, BlockNumber> {
-    pub fn new(creator: AccountId,end: BlockNumber) -> Self {
+    pub fn new(creator: AccountId,end: BlockNumber,subparam: OrgRuleParam<Balance>) -> Self {
         ProposalDetail{
             votes: BTreeMap::<AccountId, (Balance, bool)>::new(),
             creator: creator.clone(),
             end_dt: end,
+            sub_param: subparam.clone(),
         }
     }
     pub fn vote(&mut self,voter: AccountId,value: Balance,yesorno: bool) -> dispatch::DispatchResult {
@@ -206,14 +210,16 @@ impl<T: Trait> Module<T>  {
         let org = Self::get_orginfo_by_id(oid)?;
         T::Finance::reserve_to_org(oid.clone(),who.clone(),value)
     }
-    pub fn on_create_proposal(id:u32,who: T::AccountId,expire: T::BlockNumber
+    pub fn on_create_proposal(id:u32,who: T::AccountId,expire: T::BlockNumber,sub_param: OrgRuleParamOf<T>
                               ,call: Box<<T as Trait>::Call>) ->dispatch::DispatchResult {
         let oid = Self::counter2Orgid(id);
         let org = Self::get_orginfo_by_id(oid)?;
+        org.param.inherit_valid(sub_param.clone())?;
+
         let proposal = Proposal {
             org:    oid.clone(),
             call: call.encode(),
-            detail: ProposalDetail::new(who.clone(),expire),
+            detail: ProposalDetail::new(who.clone(),expire,sub_param.clone()),
         };
         Self::base_create_proposal(oid.clone(),proposal)
     }
