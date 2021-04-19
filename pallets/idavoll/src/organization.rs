@@ -33,6 +33,7 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use sp_runtime::{RuntimeDebug, traits::{Saturating, Zero, Hash}, DispatchResult};
 use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
+use test::test::parse_opts;
 
 pub type OrganizationId = u64;
 
@@ -76,7 +77,7 @@ impl<AccountId, Balance, BlockNumber> ProposalDetail<AccountId, Balance, BlockNu
         }
         Ok(())
     }
-    pub fn summary(&self) -> (Balance,Balance) {
+    fn summary(&self) -> (Balance,Balance) {
         let (yes_balance,no_balance) = (Zero::zero(),Zero::zero());
         self.votes.iter().for_each(|val|{
             if val.1.1 {
@@ -89,6 +90,11 @@ impl<AccountId, Balance, BlockNumber> ProposalDetail<AccountId, Balance, BlockNu
     }
     pub fn is_expire(&self,current: BlockNumber) -> bool {
         return self.end_dt < current
+    }
+    pub fn pass(&self,total_balance: Balance) -> bool {
+        let (yes_balance,no_balance) = self.summary();
+        let nu_balance = Zero::zero();
+        return self.sub_param.is_pass(yes_balance,no_balance,nu_balance,total_balance)
     }
 }
 
@@ -272,7 +278,13 @@ impl<T: Trait> Module<T>  {
         }
     }
     fn is_pass(proposal: ProposalOf<T>) -> bool {
-        return true
+        let total_balance = Self::get_total_token_by_oid(proposal.org);
+        proposal.detail.pass(total_balance)
+    }
+    fn get_total_token_by_oid(oid: T::AccountId) -> Result<T::Balance,dispatch::DispatchResult> {
+        let org = Self::get_orginfo_by_id(oid)?;
+
+        Ok(T::AssetHandle::total(org.get_asset_id()))
     }
 
 }
