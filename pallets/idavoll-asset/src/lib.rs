@@ -25,8 +25,8 @@ use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch,
 use frame_system::ensure_signed;
 use sp_runtime::{RuntimeDebug, ModuleId,
                  traits::{AtLeast32Bit,One,Zero,Member, AtLeast32BitUnsigned,
-                          StaticLookup, Saturating, CheckedSub, CheckedAdd
-
+                          StaticLookup, Saturating, CheckedSub, CheckedAdd,
+                          MaybeSerializeDeserialize,
 }};
 use codec::{Encode, Decode, HasCompact};
 
@@ -43,16 +43,16 @@ pub trait Trait: frame_system::Trait {
     /// The treasury's module id, used for deriving its sovereign account ID.
     type ModuleId: Get<ModuleId>;
 
-    /// The staking balance.
+    /// The staking balance.(for the local asset(idv))
     type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// The units in which we record balances.
-    type Balance: Member + Parameter + AtLeast32BitUnsigned + Default + Copy;
+    type Balance: Member + Parameter + AtLeast32BitUnsigned + MaybeSerializeDeserialize + Default + Copy;
 
     /// The arithmetic type of asset identifier.
-    type AssetId: Parameter + AtLeast32Bit + Default + Copy;
+    type AssetId: Parameter + Member +MaybeSerializeDeserialize + Ord + AtLeast32Bit + Default + Copy;
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug)]
@@ -167,11 +167,11 @@ impl<T: Trait> Module<T> {
     // Public immutables
 
     /// Get the asset `id` free balance of `who`.
-    pub fn free_balance(id: T::AssetId, who: T::AccountId) -> T::Balance {
+    pub fn free_balance(id: T::AssetId, who: &T::AccountId) -> T::Balance {
         <Balances<T>>::get((id, who)).free
     }
     /// Get the asset `id` total balance of `who`.
-    pub fn total_balance(id: T::AssetId, who: T::AccountId) -> T::Balance {
+    pub fn total_balance(id: T::AssetId, who: &T::AccountId) -> T::Balance {
         <Balances<T>>::get((id, who)).total()
     }
     /// Get the total supply of an asset `id`.
@@ -235,7 +235,7 @@ impl<T: Trait> Module<T> {
                 Ok(())
             })
     }
-    fn base_mint(id: T::AssetId, issuer: T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
+    fn base_mint(id: T::AssetId, issuer: &T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
         TotalSupply::<T>::try_mutate(id, |maybe_asset| {
             let details = maybe_asset.as_mut().ok_or(Error::<T>::Unknown)?;
 
@@ -250,7 +250,7 @@ impl<T: Trait> Module<T> {
             Ok(())
         })
     }
-    fn base_burn(id: T::AssetId, issuer: T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
+    fn base_burn(id: T::AssetId, issuer: &T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
         TotalSupply::<T>::try_mutate(id, |maybe_asset| {
             let d = maybe_asset.as_mut().ok_or(Error::<T>::Unknown)?;
             ensure!(&issuer == &d.issuer, Error::<T>::NoPermission);
@@ -268,7 +268,7 @@ impl<T: Trait> Module<T> {
             Ok(())
         })
     }
-    fn base_lock(id: T::AssetId, who: T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
+    fn base_lock(id: T::AssetId, who: &T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
         Balances::<T>::try_mutate((id, who.clone()), |maybe_account| -> dispatch::DispatchResult {
             ensure!(maybe_account.free >= amount, Error::<T>::BalanceLow);
             maybe_account.free = maybe_account.free.checked_sub(&amount)
@@ -279,7 +279,7 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::Locked(id, who.clone(), amount));
         Ok(())
     }
-    fn base_unlock(id: T::AssetId, who: T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
+    fn base_unlock(id: T::AssetId, who: &T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
         Balances::<T>::try_mutate((id, who.clone()), |maybe_account| -> dispatch::DispatchResult {
             ensure!(maybe_account.frozen >= amount, Error::<T>::BalanceLow);
             maybe_account.frozen = maybe_account.frozen.checked_sub(&amount)

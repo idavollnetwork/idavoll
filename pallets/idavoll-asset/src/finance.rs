@@ -25,12 +25,9 @@ use sp_runtime::{RuntimeDebug,
                  traits::{AccountIdConversion,Hash},
 };
 use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
-
 use crate::{Error,Module, RawEvent, Trait,ModuleId,Finances};
-use crate::rules::{BaseRule,OrgRuleParam};
-
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
+// #[cfg(feature = "std")]
+// use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 
 
@@ -78,7 +75,7 @@ impl<T: Trait> Module<T> {
             Ok(())
         })
             .or_else(|_|-> DispatchResult {
-                <Balances<T>>::insert(oid.clone(), value.clone());
+                <Finances<T>>::insert(oid.clone(), value.clone());
                 Ok(())
             })
     }
@@ -96,14 +93,14 @@ impl<T: Trait> Module<T> {
 }
 
 impl<T: Trait> BaseFinance<T::AccountId,T::Balance> for Module<T> {
-    fn balance_of(oid: AccountId) -> Result<Balance,DispatchError> {
+    fn balance_of(oid: T::AccountId) -> Result<T::Balance,DispatchError> {
         Self::Vault_balance_of(oid)
     }
 
-    fn reserve_to_org(oid: AccountId,who: AccountId,value: Balance) -> DispatchResult {
+    fn reserve_to_org(oid: T::AccountId,who: T::AccountId,value: T::Balance) -> DispatchResult {
         Self::transfer_to_Vault(oid,who,value)
     }
-    fn transfer(oid: AccountId,to: AccountId,value: Balance) -> DispatchResult {
+    fn transfer(oid: T::AccountId,to: T::AccountId,value: T::Balance) -> DispatchResult {
         Self::spend_organization_Vault(oid,to,value)
     }
 }
