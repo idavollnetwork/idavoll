@@ -29,6 +29,7 @@ use frame_system::ensure_signed;
 use sp_runtime::{Permill, ModuleId, RuntimeDebug,
 				 traits::{Zero, StaticLookup, AccountIdConversion,
 						  Saturating,AtLeast32BitUnsigned,AtLeast32Bit,
+						  Member,MaybeSerializeDeserialize,
 				 }};
 
 #[cfg(test)]
@@ -44,7 +45,7 @@ mod utils;
 mod default_weights;
 
 pub use organization::{OrgInfo, Proposal,ProposalDetailOf};
-use idavoll_asset::{token::BaseToken,finance::BaseFinance};
+use idavoll_asset::{token::BaseToken,finance::BaseFinance,LocalBalance,Trait as AssetTrait};
 use rules::{OrgRuleParam};
 
 pub trait WeightInfo {
@@ -62,26 +63,28 @@ pub trait Trait: frame_system::Trait {
 	type ModuleId: Get<ModuleId>;
 	/// the Asset Handler will handle all op in the voting about asset operation.
 	type AssetHandle: BaseToken<Self::AccountId>;
+
+	type Balance: Member + Parameter + AtLeast32BitUnsigned + MaybeSerializeDeserialize + Default + Copy;
 	/// keep the local asset(idv) of the organization
 	type Finance: BaseFinance<Self::AccountId,Self::Balance>;
 	type AssetId: Parameter + AtLeast32Bit + Default + Copy;
 }
 
-type BalanceOf<T> = <<T as frame_system::Trait>::AccountId>::Balance;
+type BalanceOf<T> = <T as Trait>::Balance;
 pub type OrgCount = u32;
 pub type OrgInfoOf<T> = OrgInfo<
 	<T as frame_system::Trait>::AccountId,
-	<<T as frame_system::Trait>::AccountId>::Balance,
-	T::AssetId,
+	BalanceOf<T>,
+	<T as Trait>::AssetId,
 >;
 pub type ProposalIdOf<T> = <T as frame_system::Trait>::Hash;
 pub type ProposalOf<T> = Proposal<
 	Vec<u8>,
 	<T as frame_system::Trait>::AccountId,
-	<<T as frame_system::Trait>::AccountId>::Balance,
+	BalanceOf<T>,
 	<T as frame_system::Trait>::BlockNumber,
 >;
-pub type OrgRuleParamOf<T> = OrgRuleParam<<<T as frame_system::Trait>::AccountId>::Balance>;
+pub type OrgRuleParamOf<T> = OrgRuleParam<BalanceOf<T>>;
 
 // The pallet's runtime storage items.
 // https://substrate.dev/docs/en/knowledgebase/runtime/storage
@@ -100,12 +103,13 @@ decl_event!(
 	where
 	AccountId = <T as frame_system::Trait>::AccountId,
 	ProposalId = ProposalIdOf<T>,
+	OrgInfo = OrgInfoOf<T>,
 	{
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		SomethingStored(u32, AccountId),
 		/// An organization was created with the following parameters. \[organizationId, details\]
-        OrganizationCreated(AccountId, OrgInfos),
+        OrganizationCreated(AccountId, OrgInfo),
 		/// A proposal has been finalized with the following result. \[proposal id, result\]
         ProposalFinalized(ProposalId, dispatch::DispatchResult),
         /// A proposal has been passed. \[proposal id]
