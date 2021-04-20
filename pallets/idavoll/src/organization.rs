@@ -95,6 +95,9 @@ impl<AccountId, Balance, BlockNumber> ProposalDetail<AccountId, Balance, BlockNu
         let nu_balance = Zero::zero();
         return self.sub_param.is_pass(yes_balance,no_balance,nu_balance,total_balance)
     }
+    pub fn creator(&self) -> AccountId {
+        self.creator.clone()
+    }
 }
 
 pub type ProposalDetailOf<T> = ProposalDetail<<T as frame_system::Trait>::AccountId,
@@ -166,14 +169,14 @@ impl<AccountId: Ord, Balance,AssetId> OrgInfo<AccountId, Balance,AssetId> {
 /// Represent a proposal as stored by the pallet.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct Proposal<Call, ProposalDetail, OrganizationId> {
-    pub org: OrganizationId,
+pub struct Proposal<Call, AccountId, Balance, BlockNumber> {
+    pub org: AccountId,
     pub call: Call,
-    pub detail: ProposalDetail,
+    pub detail: ProposalDetail<AccountId, Balance, BlockNumber>,
 }
 
-impl<Call,ProposalDetail, OrganizationId> Proposal<Call,ProposalDetail, OrganizationId> {
-    pub fn new(id: OrganizationId,calldata: Call,detail: ProposalDetail) -> Self {
+impl<Call, AccountId, Balance, BlockNumber> Proposal<Call, AccountId, Balance, BlockNumber> {
+    pub fn new(id: AccountId,calldata: Call,detail: ProposalDetail<AccountId, Balance, BlockNumber>) -> Self {
         Self{
             org: id,
             call: calldata,
@@ -183,6 +186,9 @@ impl<Call,ProposalDetail, OrganizationId> Proposal<Call,ProposalDetail, Organiza
     // get proposal id by hash the content in the proposal
     pub fn id(&mut self) -> Trait::Hash {
         Trait::Hashing::hash_of(&[self.encode()])
+    }
+    pub fn creator(&self) -> AccountId {
+        self.detail.creator()
     }
 }
 
@@ -206,7 +212,7 @@ impl<T: Trait> Module<T>  {
         let oid = Self::counter2Orgid(counter);
 
         OrgInfos::<T>::insert(&oid, oinfo.clone());
-        Self::deposit_event(RawEvent::OrganizationCreated(org_id, details));
+        Self::deposit_event(RawEvent::OrganizationCreated(oid, oinfo));
         Counter::<T>::put(new_counter);
         Ok(())
     }
@@ -216,7 +222,7 @@ impl<T: Trait> Module<T>  {
         T::Finance::reserve_to_org(oid.clone(),who.clone(),value)
     }
     pub fn on_create_proposal(id:u32,who: T::AccountId,expire: T::BlockNumber,sub_param: OrgRuleParamOf<T>
-                              ,call: Box<<T as Trait>::Call>) ->dispatch::DispatchResult {
+                              ,call: Box<<T as frame_system::Trait>::Call>) ->dispatch::DispatchResult {
         let oid = Self::counter2Orgid(id);
         let org = Self::get_orginfo_by_id(oid)?;
         org.param.inherit_valid(sub_param.clone())?;
@@ -245,7 +251,7 @@ impl<T: Trait> Module<T>  {
             return Err(Error::<T>::ProposalDuplicate.into());
         }
         Proposals::<T>::insert(&proposal_id, proposal.clone());
-        Self::deposit_event(RawEvent::ProposalCreated(oid, proposal_id,detail.creator.clone()));
+        Self::deposit_event(RawEvent::ProposalCreated(oid, proposal_id,proposal.creator()));
     }
     fn make_proposal_id(proposal: ProposalOf<T>) -> ProposalIdOf<T> {
         proposal.clone().id()

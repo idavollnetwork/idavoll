@@ -90,7 +90,7 @@ impl<Balance> OrgRuleParam<Balance> {
             && subparam.abstention <= self.abstention {
             Ok(())
         }
-        Err(Error::<T>::WrongRuleParam.into())
+        Err(Error::<Trait>::WrongRuleParam.into())
     }
 }
 
