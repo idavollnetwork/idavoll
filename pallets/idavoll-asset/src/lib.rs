@@ -157,7 +157,7 @@ decl_module! {
 			let origin = ensure_signed(origin)?;
 			let target = T::Lookup::lookup(target)?;
 
-			Self::base_transfer(id,origin.clone(),target,amount)
+			Self::base_transfer(id,&origin,&target,amount)
 		}
 	}
 }
@@ -207,12 +207,12 @@ impl<T: Trait> Module<T> {
     }
 
     /// Move some assets from one holder to another.
-    fn base_transfer(id: T::AssetId, origin: T::AccountId,
-                target: T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
+    fn base_transfer(id: T::AssetId, origin: &T::AccountId,
+                target: &T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
 
         ensure!(!amount.is_zero(), Error::<T>::AmountZero);
         Self::deposit_event(RawEvent::Transferred(id, origin.clone(), target.clone(), amount));
-        if origin == target {
+        if *origin == *target {
             return Ok(());
         }
 
@@ -239,7 +239,7 @@ impl<T: Trait> Module<T> {
         TotalSupply::<T>::try_mutate(id, |maybe_asset| {
             let details = maybe_asset.as_mut().ok_or(Error::<T>::Unknown)?;
 
-            ensure!(&issuer == &details.issuer, Error::<T>::NoPermission);
+            ensure!(*issuer == details.issuer, Error::<T>::NoPermission);
             details.supply = details.supply.checked_add(&amount).ok_or(Error::<T>::Overflow)?;
 
             Balances::<T>::try_mutate((id, issuer.clone()), |t| -> dispatch::DispatchResult {
@@ -253,7 +253,7 @@ impl<T: Trait> Module<T> {
     fn base_burn(id: T::AssetId, issuer: &T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
         TotalSupply::<T>::try_mutate(id, |maybe_asset| {
             let d = maybe_asset.as_mut().ok_or(Error::<T>::Unknown)?;
-            ensure!(&issuer == &d.issuer, Error::<T>::NoPermission);
+            ensure!(*issuer == d.issuer, Error::<T>::NoPermission);
 
             Balances::<T>::try_mutate((id, issuer.clone()), |maybe_account| -> dispatch::DispatchResult {
                 ensure!(maybe_account.free >= amount, Error::<T>::BalanceLow);
@@ -264,7 +264,7 @@ impl<T: Trait> Module<T> {
 
             d.supply = d.supply.saturating_sub(amount);
 
-            Self::deposit_event(RawEvent::Burned(id, issuer, amount));
+            Self::deposit_event(RawEvent::Burned(id, issuer.clone(), amount));
             Ok(())
         })
     }

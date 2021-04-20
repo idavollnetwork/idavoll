@@ -74,7 +74,7 @@ pub trait BaseToken<AccountId> {
 
     /// Unlock `value` from locked balance to free balance. This function cannot fail.
     /// If the locked balance of `who` is less than `value`, then the remaining amount will be returned.
-    fn unlock(aid: Self::AssetId, who: &AccountId, value: Self::Balance) -> Self::Balance;
+    fn unlock(aid: Self::AssetId, who: &AccountId, value: Self::Balance) -> DispatchResult;
 }
 
 
@@ -127,7 +127,7 @@ impl<T: Trait> BaseToken<T::AccountId> for Module<T> {
 
     /// Unlock `value` from locked balance to free balance. This function cannot fail.
     /// If the locked balance of `who` is less than `value`, then the remaining amount will be returned.
-    fn unlock(aid: Self::AssetId, who: &T::AccountId, value: Self::Balance) -> Self::Balance{
+    fn unlock(aid: Self::AssetId, who: &T::AccountId, value: Self::Balance) -> DispatchResult{
         Self::base_unlock(aid,who,value)
     }
 }
