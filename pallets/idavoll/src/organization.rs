@@ -21,7 +21,6 @@
 
 use frame_support::{
 	ensure,dispatch,
-    sp_std::collections::btree_map::BTreeMap,
 };
 use crate::utils::*;
 use crate::rules::{BaseRule,OrgRuleParam};
@@ -33,9 +32,9 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use sp_runtime::{RuntimeDebug, traits::{Saturating, Zero, Hash}, DispatchResult};
 use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
-use test::test::parse_opts;
 
-pub type OrganizationId = u64;
+
+// pub type OrganizationId = u64;
 
 /// this is the free proposal,every one in the organization can create
 /// the proposal for pay a little fee, it not staking any asset to do this.
@@ -66,11 +65,11 @@ impl<AccountId, Balance, BlockNumber> ProposalDetail<AccountId, Balance, BlockNu
         }
     }
     pub fn vote(&mut self,voter: AccountId,value: Balance,yesorno: bool) -> dispatch::DispatchResult {
-        if let some(val) = self.votes.get_mut(voter) {
+        if let Some(val) = self.votes.get_mut(voter) {
             if val.1 == yesorno {
-                *val = (value.saturating_add(val.0),yesorno);
+                *val = (value.saturating_add(val.0.clone()),yesorno);
             } else {
-                *val = (value.saturating_add(val.0),val.1);
+                *val = (value.saturating_add(val.0.clone()),val.1);
             }
         } else {
             self.votes.insert(voter.clone(),(value,yesorno));

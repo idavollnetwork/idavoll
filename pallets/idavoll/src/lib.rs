@@ -29,8 +29,7 @@ use frame_system::ensure_signed;
 use sp_runtime::{Permill, ModuleId, RuntimeDebug,
 				 traits::{Zero, StaticLookup, AccountIdConversion,
 						  Saturating,AtLeast32BitUnsigned,AtLeast32Bit,
-				 }
-};
+				 }};
 
 #[cfg(test)]
 mod mock;
@@ -44,7 +43,7 @@ mod voting;
 mod utils;
 mod default_weights;
 
-pub use organization::{OrgInfo, Proposal,OrganizationId,ProposalDetailOf};
+pub use organization::{OrgInfo, Proposal,ProposalDetailOf};
 use idavoll_asset::{token::BaseToken,finance::BaseFinance};
 use rules::{OrgRuleParam};
 
@@ -159,15 +158,7 @@ decl_module! {
 			let who = ensure_signed(origin)?;
 			Self::reserve_to_Vault(id,who,value)
 		}
-		/// create proposal in the organization for voting by members
-		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
-		pub fn create_proposal(origin,id: u32,length: T::BlockNumber,sub_param: OrgRuleParamOf<T>,
-		,call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {
-			let who = ensure_signed(origin)?;
-			let cur = frame_system::Module::<T>::block_number();
-			let expiry = cur.saturating_add(length);
-			Self::on_create_proposal(id,who,expire,call)
-		}
+
 		/// voting on the proposal by the members in the organization
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
 		pub fn vote_proposal(origin,pid: ProposalIdOf<T>,value: T::Balance,yesorno: bool) -> dispatch::DispatchResult {
@@ -181,6 +172,14 @@ decl_module! {
 			let who = T::Lookup::lookup(target)?;
 
 			Self::on_add_member(owner,who,id)
+		}
+		/// create proposal in the organization for voting by members
+		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		pub fn create_proposal(origin,id: u32,length: T::BlockNumber,sub_param: OrgRuleParamOf<T>,call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {
+			let who = ensure_signed(origin)?;
+			let cur = frame_system::Module::<T>::block_number();
+			let expiry = cur.saturating_add(length);
+			Self::on_create_proposal(id,who,expire,call)
 		}
 	}
 }
