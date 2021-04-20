@@ -25,7 +25,7 @@ use sp_runtime::{RuntimeDebug,
                  traits::{AccountIdConversion,Hash},
 };
 use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
-use crate::{Error,Module, RawEvent, Trait,ModuleId,Finances};
+use crate::{Error,Module, RawEvent,Finances, Trait,ModuleId,LocalBalance};
 // #[cfg(feature = "std")]
 // use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
@@ -57,50 +57,16 @@ impl<T: Trait> Module<T> {
         // "modl" ++ "py/idv" ++ "bt" is 12 bytes, and four bytes remaining for bounty index
         T::ModuleId::get().into_sub_account(("bt", id))
     }
-    pub fn Vault_balance_of(oid: T::AccountId) -> Result<T::Balance, DispatchError> {
-        match Finances::<T>::try_get(oid) {
-            Err(e) => Err(Error::<T>::OrganizationNotFound.into()),
-            Ok(b) => Ok(b),
-        }
-    }
-    /// transfer the balance to the organization's Vault from the members in the organization
-    pub fn transfer_to_Vault(oid: T::AccountId,who: T::AccountId,value: T::Balance) -> DispatchResult {
-        let balance = T::Currency::free_balance(&who);
-        ensure!(balance >= value,Error::<T>::BalanceLow);
-        let Vault_account = Self::account_id();
-        T::Currency::transfer(&who,&Vault_account,value,AllowDeath)?;
-
-        Finances::<T>::try_mutate(oid.clone(), |a| -> DispatchResult {
-            *a = a.saturating_add(value.clone());
-            Ok(())
-        })
-            .or_else(|_|-> DispatchResult {
-                <Finances<T>>::insert(oid.clone(), value.clone());
-                Ok(())
-            })
-    }
-    /// transfer the balance to `to` from finance's Vault by Call<> function
-    pub fn spend_organization_Vault(oid: T::AccountId,to: T::AccountId,value: T::Balance) -> DispatchResult {
-        let Vault_balance = Self::Vault_balance_of(oid.clone())?;
-        ensure!(Vault_balance >= value,Error::<T>::BalanceLow);
-        let Vault_account = Self::account_id();
-        T::Currency::transfer(&Vault_account,&to,value,AllowDeath)?;
-        Finances::<T>::try_mutate_exists(oid,|x|{
-            *x = x.saturating_sub(value.clone());
-            Ok(())
-        })
-    }
 }
 
-impl<T: Trait> BaseFinance<T::AccountId,T::Balance> for Module<T> {
-    fn balance_of(oid: T::AccountId) -> Result<T::Balance,DispatchError> {
+impl<T: Trait> BaseFinance<T::AccountId,LocalBalance<T>> for Module<T> {
+    fn balance_of(oid: T::AccountId) -> Result<LocalBalance<T>,DispatchError> {
         Self::Vault_balance_of(oid)
     }
-
-    fn reserve_to_org(oid: T::AccountId,who: T::AccountId,value: T::Balance) -> DispatchResult {
+    fn reserve_to_org(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> DispatchResult {
         Self::transfer_to_Vault(oid,who,value)
     }
-    fn transfer(oid: T::AccountId,to: T::AccountId,value: T::Balance) -> DispatchResult {
+    fn transfer(oid: T::AccountId,to: T::AccountId,value: LocalBalance<T>) -> DispatchResult {
         Self::spend_organization_Vault(oid,to,value)
     }
 }

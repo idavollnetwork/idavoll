@@ -20,7 +20,7 @@
 
 use sp_std::{fmt::Debug};
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch,
-                    traits::{Get,EnsureOrigin,Currency, ReservableCurrency},
+                    traits::{Get,EnsureOrigin,Currency, ReservableCurrency,ExistenceRequirement::AllowDeath},
                     Parameter,ensure};
 use frame_system::ensure_signed;
 use sp_runtime::{RuntimeDebug, ModuleId,
@@ -54,6 +54,9 @@ pub trait Trait: frame_system::Trait {
     /// The arithmetic type of asset identifier.
     type AssetId: Parameter + Member +MaybeSerializeDeserialize + Ord + AtLeast32Bit + Default + Copy;
 }
+
+/// the balance for local token(idv)
+pub type LocalBalance<T> = <<T as Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug)]
 pub struct AssetDetails<
@@ -123,6 +126,8 @@ decl_error! {
 		Unknown,
 		/// A mint operation lead to an overflow.
 		Overflow,
+		/// Unknow the organization id
+		UnknownOwnerID,
 	}
 }
 
@@ -131,7 +136,7 @@ decl_storage! {
 		/// The number of units of assets held by any given account.
 		pub Balances: map hasher(blake2_128_concat) (T::AssetId, T::AccountId) => AccountAssetMetadata<T::Balance>;
 		/// record the balance of the local asset(idv) for every organization
-		pub Finances: map hasher(blake2_128_concat) T::AccountId => T::Balance;
+		pub Finances get(fn finances): map hasher(blake2_128_concat) T::AccountId => LocalBalance<T>;
 		/// The next asset identifier up for grabs.
 		NextAssetId get(fn next_asset_id): T::AssetId;
         // pub Locks get(fn locks): double_map hasher(blake2_128_concat) (T::AssetId, T::AccountId), hasher(blake2_128_concat) LockIdentifier => T::Balance;
@@ -181,7 +186,6 @@ impl<T: Trait> Module<T> {
             _ => Zero::zero()
         }
     }
-
     /// Issue a new class of fungible assets. There are, and will only ever be, `total`
     /// such assets and they'll all belong to the `origin` initially. It will have an
     /// identifier `AssetId` instance: this will be specified in the `Issued` event.
@@ -289,6 +293,43 @@ impl<T: Trait> Module<T> {
         })?;
         Self::deposit_event(RawEvent::UnLocked(id, who.clone(), amount));
         Ok(())
+    }
+
+
+    pub fn Vault_balance_of(oid: T::AccountId) -> Result<LocalBalance<T>, dispatch::DispatchError> {
+        if Finances::<T>::contains_key(oid.clone()) {
+            Ok(<Finances<T>>::get(oid.clone()))
+        }else {
+            Err(Error::<T>::UnknownOwnerID.into())
+        }
+    }
+    /// transfer the balance to the organization's Vault from the members in the organization
+    pub fn transfer_to_Vault(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
+        let balance = T::Currency::free_balance(&who);
+        ensure!(balance >= value,Error::<T>::BalanceLow);
+        let Vault_account = Self::account_id();
+        T::Currency::transfer(&who,&Vault_account,value,AllowDeath)?;
+
+        Finances::<T>::try_mutate(oid.clone(), |a| -> dispatch::DispatchResult {
+            *a = a.saturating_add(value.clone());
+            Ok(())
+        })
+            .or_else(|_|-> dispatch::DispatchResult {
+                <Finances<T>>::insert(oid.clone(), value.clone());
+                Ok(())
+            })
+    }
+    /// transfer the balance to `to` from finance's Vault by Call<> function
+    pub fn spend_organization_Vault(oid: T::AccountId,to: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
+        let Vault_balance = Self::Vault_balance_of(oid.clone())?;
+        ensure!(Vault_balance >= value,Error::<T>::BalanceLow);
+        let Vault_account = Self::account_id();
+        T::Currency::transfer(&Vault_account,&to,value,AllowDeath)?;
+        Finances::<T>::try_mutate_exists(oid,|x|{
+            let balance = x.as_mut().ok_or(Error::<T>::UnknownOwnerID)?;
+            *x = Some(balance.saturating_sub(value));
+            Ok(())
+        })
     }
 }
 
