@@ -31,7 +31,7 @@ use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf,Error,
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
-use sp_runtime::{RuntimeDebug, traits::{Saturating, Zero, Hash}, DispatchResult};
+use sp_runtime::{RuntimeDebug, traits::{Saturating, Zero}, DispatchResult};
 use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
 
 
@@ -41,7 +41,11 @@ use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, mar
 /// the proposal for pay a little fee, it not staking any asset to do this.
 #[derive(Eq, PartialEq, RuntimeDebug, Encode, Decode, Clone, Default)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct ProposalDetail<AccountId, Balance, BlockNumber> {
+pub struct ProposalDetail<AccountId, Balance, BlockNumber>
+    where
+        AccountId: Ord + Clone,
+        Balance: Clone,
+{
     /// A map of voter => (coins, in agree or against)
     pub votes: BTreeMap<AccountId, (Balance, bool)>,
     /// the creator of the proposal
@@ -53,7 +57,10 @@ pub struct ProposalDetail<AccountId, Balance, BlockNumber> {
     pub sub_param: OrgRuleParam<Balance>,
 }
 
-impl<AccountId, Balance, BlockNumber> ProposalDetail<AccountId, Balance, BlockNumber> {
+impl<AccountId: Ord + Clone,
+    Balance: Clone,
+    BlockNumber
+    > ProposalDetail<AccountId, Balance, BlockNumber> {
     pub fn new(creator: AccountId,end: BlockNumber,subparam: OrgRuleParam<Balance>) -> Self {
         ProposalDetail{
             votes: BTreeMap::<AccountId, (Balance, bool)>::new(),
@@ -63,7 +70,7 @@ impl<AccountId, Balance, BlockNumber> ProposalDetail<AccountId, Balance, BlockNu
         }
     }
     pub fn vote(&mut self,voter: AccountId,value: Balance,yesorno: bool) -> dispatch::DispatchResult {
-        if let Some(val) = self.votes.get_mut(voter) {
+        if let Some(val) = self.votes.get_mut(&voter.clone()) {
             if val.1 == yesorno {
                 *val = (value.saturating_add(val.0.clone()),yesorno);
             } else {
@@ -167,18 +174,31 @@ impl<AccountId: Ord, Balance,AssetId> OrgInfo<AccountId, Balance,AssetId> {
 /// Represent a proposal as stored by the pallet.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct Proposal<Call, AccountId, Balance, BlockNumber,Hash> {
+pub struct Proposal<Call, AccountId, Balance, BlockNumber,Hash>
+where
+    AccountId: Ord + Clone,
+    Balance: Clone,
+{
     pub org: AccountId,
     pub call: Call,
     pub detail: ProposalDetail<AccountId, Balance, BlockNumber>,
+    /// accepting a `Hash` type.
+    _phantom: marker::PhantomData<Hash>,
 }
 
-impl<Call, AccountId, Balance, BlockNumber,Hash> Proposal<Call, AccountId, Balance, BlockNumber,Hash> {
+impl<
+    Call,
+    AccountId: Ord + Clone,
+    Balance: Clone,
+    BlockNumber,
+    Hash
+> Proposal<Call, AccountId, Balance, BlockNumber,Hash> {
     pub fn new(id: AccountId,calldata: Call,detail: ProposalDetail<AccountId, Balance, BlockNumber>) -> Self {
         Self{
             org: id,
             call: calldata,
             detail: detail,
+            _phantom: marker::PhantomData,
         }
     }
     // get proposal id by hash the content in the proposal
@@ -220,7 +240,7 @@ impl<T: Trait> Module<T>  {
         T::Finance::reserve_to_org(oid.clone(),who.clone(),value)
     }
     pub fn on_create_proposal(id:u32,who: T::AccountId,expire: T::BlockNumber,sub_param: OrgRuleParamOf<T>
-                              ,call: Box<<T as frame_system::Trait>::Call>) ->dispatch::DispatchResult {
+                              ,call: Box<<T as Trait>::Call>) ->dispatch::DispatchResult {
         let oid = Self::counter2Orgid(id);
         let org = Self::get_orginfo_by_id(oid)?;
         org.param.inherit_valid(sub_param.clone())?;
@@ -229,6 +249,7 @@ impl<T: Trait> Module<T>  {
             org:    oid.clone(),
             call: call.encode(),
             detail: ProposalDetail::new(who.clone(),expire,sub_param.clone()),
+            _phantom: marker::PhantomData,
         };
         Self::base_create_proposal(oid.clone(),proposal)
     }

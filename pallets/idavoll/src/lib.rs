@@ -22,8 +22,9 @@
 /// https://substrate.dev/docs/en/knowledgebase/runtime/frame
 
 use frame_support::{decl_module, decl_storage, decl_event, decl_error,
-					dispatch, traits::{Get,EnsureOrigin},
-					Parameter,ensure,weights::{GetDispatchInfo, Weight},
+					dispatch::{self,Dispatchable, Parameter, PostDispatchInfo},
+					traits::{Get,EnsureOrigin},
+					ensure,weights::{GetDispatchInfo, Weight},
 };
 use frame_system::ensure_signed;
 use sp_runtime::{Permill, ModuleId, RuntimeDebug,
@@ -59,6 +60,8 @@ pub trait WeightInfo {
 pub trait Trait: frame_system::Trait {
 	/// Because this pallet emits events, it depends on the runtime's definition of an event.
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+	type Call: Parameter + GetDispatchInfo + From<frame_system::Call<Self>>
+	+ Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo>;
 	/// The idavoll's module id, used for deriving its sovereign account ID,use to organization id.
 	type ModuleId: Get<ModuleId>;
 	/// the Asset Handler will handle all op in the voting about asset operation.
@@ -188,7 +191,7 @@ decl_module! {
 		/// create proposal in the organization for voting by members
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
 		pub fn create_proposal(origin,id: u32,length: T::BlockNumber,sub_param: OrgRuleParamOf<T>,
-		call: Box<<T as frame_system::Trait>::Call>) -> dispatch::DispatchResult {
+		call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
 			let cur = frame_system::Module::<T>::block_number();
 			let expire = cur.saturating_add(length);

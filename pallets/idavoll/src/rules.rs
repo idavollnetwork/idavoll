@@ -32,6 +32,7 @@ use crate::{ Error,Module, RawEvent, Trait,
             OrgCount,OrgInfoOf,BalanceOf};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use codec::{Decode, Encode};
 
 pub const LengthLimit01: i32 = 32;
 pub const MaxRuleNumber: u32 = 10_000;
@@ -51,7 +52,8 @@ pub trait BaseRule {
     fn on_can_close(creator: Self::AccountId,detail: Self::Params) -> DispatchResult;
 }
 
-#[derive(Debug, Default, Clone,Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct OrgRuleParam<Balance> {
     /// Minimum approval votes threshold in a organization
     pub minAffirmative: Balance,

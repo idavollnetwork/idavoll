@@ -74,7 +74,7 @@ impl<T: Trait> Module<T> {
         let is_pass = Self.is_pass(proposal.clone());
         if is_pass {
             // remove the proposal from the storage
-            let call = <T as frame_system::Trait>::Call::decode(&mut &proposal.clone().call[..]).map_err(|_| Error::<T>::ProposalDecodeFailed)?;
+            let call = <T as Trait>::Call::decode(&mut &proposal.clone().call[..]).map_err(|_| Error::<T>::ProposalDecodeFailed)?;
             let res = call.dispatch(frame_system::RawOrigin::Signed(proposal.clone().org).into());
             Self::deposit_event(RawEvent::ProposalFinalized(pid, res.map(|_| ()).map_err(|e| e.error)));
         }
