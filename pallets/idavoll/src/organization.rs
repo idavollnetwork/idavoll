@@ -19,12 +19,10 @@
 ///
 ///
 
-use frame_support::{
-	ensure,dispatch::{self,Parameter},
-};
+use frame_support::{ensure, dispatch::{self, Parameter}, StorageValue};
 use crate::utils::*;
 use crate::rules::{BaseRule,OrgRuleParam};
-use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf,Error,
+use crate::{OrgCounter, OrgInfos,Proposals,ProposalOf,ProposalIdOf,Error,
             Module, RawEvent, Trait, OrgCount,OrgInfoOf,OrgRuleParamOf,
             BalanceOf};
 
@@ -33,7 +31,7 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use sp_runtime::{RuntimeDebug, traits::{Hash as FrameHash,Saturating,AtLeast32BitUnsigned,Member, Zero}, DispatchResult};
 use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
-
+use idavoll_asset::{token::BaseToken,finance::BaseFinance};
 
 // pub type OrganizationId = u64;
 
@@ -132,7 +130,7 @@ impl<AssetId: Clone + Default> AssetInfo<AssetId> {
 pub struct OrgInfo<AccountId, Balance,AssetId>
 where
     AccountId: Ord + Clone,
-    Balance: Parameter + Member,
+    Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned,
     AssetId: Clone + Default,
 {
     /// A set of accounts of an organization.
@@ -145,7 +143,7 @@ where
 
 impl<
     AccountId: Ord + Clone,
-    Balance: Parameter + Member,
+    Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned,
     AssetId: Clone + Default,
 > OrgInfo<AccountId, Balance,AssetId> {
     pub fn new() -> Self {
@@ -217,26 +215,25 @@ impl<
 
 
 impl<T: Trait> Module<T>  {
-    // be accountid of organization id for orginfos in the storage
-    pub fn counter2Orgid(c: OrgCount) -> T::AccountId {
-        Self::ModuleId.into_sub_account(c)
+
+    /// get proposal id by hash the content in the proposal
+    pub fn make_proposal_id(proposal: &ProposalOf<T>) -> ProposalIdOf<T> {
+        T::Hashing::hash_of(&[proposal.encode()])
     }
-    pub fn get_orginfo_by_id(oid: T::AccountId) -> Result<OrgInfoOf<T>, dispatch::DispatchError> {
-        match OrgInfo::<T>::try_get(oid) {
-            Err(e) => Err(Error::<T>::OrganizationNotFound.into()),
-            Ok(org) => Ok(org),
+    fn get_total_token_by_oid(oid: T::AccountId) -> Result<T::Balance,dispatch::DispatchResult> {
+        let org = Self::get_orginfo_by_id(oid)?;
+
+        Ok(T::AssetHandle::total(org.get_asset_id()))
+    }
+    fn is_pass(proposal: ProposalOf<T>) -> bool {
+        let total_balance = Self::get_total_token_by_oid(proposal.org);
+        match total_balance {
+            Ok(balance) => proposal.detail.pass(balance),
+            Err(e) => false,
         }
     }
-    pub fn create_org(oinfo: OrgInfoOf<T>) -> dispatch::DispatchResult {
-        let counter = Counter::<T>::get();
-        let new_counter = counter.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-        let oid = Self::counter2Orgid(counter);
 
-        OrgInfos::<T>::insert(&oid, oinfo.clone());
-        Self::deposit_event(RawEvent::OrganizationCreated(oid, oinfo));
-        Counter::<T>::put(new_counter);
-        Ok(())
-    }
+
     pub fn reserve_to_Vault(id: u32,who: T::AccountId,value: T::Balance) -> DispatchResult {
         let oid = Self::counter2Orgid(id);
         let org = Self::get_orginfo_by_id(oid)?;
@@ -262,56 +259,8 @@ impl<T: Trait> Module<T>  {
     pub fn on_add_member(owner: T::AccountId,who: T::AccountId,id: u32) -> dispatch::DispatchResult {
         let oid = Self::counter2Orgid(id);
         let org = Self::get_orginfo_by_id(oid)?;
-        ensure!(Self::is_member(oid,owner),Error::<T>::NotOwnerByOrg);
+        ensure!(Self::is_member(oid,&owner),Error::<T>::NotOwnerByOrg);
         Self::base_add_member_on_orgid(oid.clone(),who.clone())
-    }
-    fn base_create_proposal(oid: T::AccountId,proposal: ProposalOf<T>) -> dispatch::DispatchResult {
-
-        let proposal_id = Self::make_proposal_id(&proposal);
-        if Proposals::<T>::contains_key(proposal_id) {
-            return Err(Error::<T>::ProposalDuplicate.into());
-        }
-        Proposals::<T>::insert(&proposal_id, proposal.clone());
-        Self::deposit_event(RawEvent::ProposalCreated(oid, proposal_id,proposal.creator()));
-    }
-    /// get proposal id by hash the content in the proposal
-    fn make_proposal_id(proposal: &ProposalOf<T>) -> ProposalIdOf<T> {
-        T::Hashing::hash_of(&[proposal.encode()])
-    }
-    pub fn is_member(oid: T::AccountId,who: &T::AccountId) -> bool {
-        match OrgInfo::<T>::try_get(oid) {
-            Ok(org) => org.is_member(who),
-            Err(e) => false,
-        }
-    }
-    // add a member into a organization by orgid
-    fn base_add_member_on_orgid(oid: T::AccountId,memberID: T::AccountId) -> dispatch::DispatchResult {
-        OrgInfo::<T>::try_mutate(oid,|infos| -> dispatch::DispatchResult {
-            match infos.members
-                .iter()
-                .find(|&x| x==memberID) {
-                None => {
-                    infos.members.push(memberID);
-                    Ok(())
-                },
-                _ => Ok(())
-            }
-        })
-    }
-    pub fn get_proposal_by_id(pid: ProposalIdOf<T>) -> Result<ProposalOf<T>, dispatch::DispatchError> {
-        match Proposals::<T>::get(pid) {
-            Some(proposal) => Ok(proposal),
-            None => Err(Error::<T>::ProposalNotFound.into()),
-        }
-    }
-    fn is_pass(proposal: ProposalOf<T>) -> bool {
-        let total_balance = Self::get_total_token_by_oid(proposal.org);
-        proposal.detail.pass(total_balance)
-    }
-    fn get_total_token_by_oid(oid: T::AccountId) -> Result<T::Balance,dispatch::DispatchResult> {
-        let org = Self::get_orginfo_by_id(oid)?;
-
-        Ok(T::AssetHandle::total(org.get_asset_id()))
     }
 
 }

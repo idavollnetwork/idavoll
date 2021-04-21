@@ -65,7 +65,11 @@ pub trait Trait: frame_system::Trait {
 	/// The idavoll's module id, used for deriving its sovereign account ID,use to organization id.
 	type ModuleId: Get<ModuleId>;
 	/// the Asset Handler will handle all op in the voting about asset operation.
-	type AssetHandle: BaseToken<Self::AccountId>;
+	type AssetHandle: BaseToken<
+		Self::AccountId,
+		AssetId = Self::AssetId,
+		Balance = Self::Balance,
+	>;
 
 	type Balance: Member + Parameter + AtLeast32BitUnsigned + MaybeSerializeDeserialize + Default + Copy;
 	/// keep the local asset(idv) of the organization
@@ -93,7 +97,7 @@ pub type OrgRuleParamOf<T> = OrgRuleParam<BalanceOf<T>>;
 // https://substrate.dev/docs/en/knowledgebase/runtime/storage
 decl_storage! {
 	trait Store for Module<T: Trait> as IdavollModule {
-		pub Counter get(fn counter): OrgCount = 0;
+		pub OrgCounter get(fn counter): OrgCount = 0;
 		pub OrgInfos get(fn OrgInfos): map hasher(blake2_128_concat) T::AccountId => Option<OrgInfoOf<T>>;
         pub Proposals get(fn proposals): map hasher(blake2_128_concat) ProposalIdOf<T> => Option<ProposalOf<T>>;
 	}
@@ -163,7 +167,7 @@ decl_module! {
 			let info_clone = info.clone();
 			info_clone.add_member(owner.clone());
 			info_clone.set_asset_id(asset_id.clone());
-			Self::create_org(info_clone.clone())
+			Self::storage_new_organization(info_clone.clone())
 		}
 		/// reserve the local asset(idv) to organization's Vault, it used to assigned by the proposal
 		/// of call function
@@ -195,6 +199,75 @@ decl_module! {
 			let cur = frame_system::Module::<T>::block_number();
 			let expire = cur.saturating_add(length);
 			Self::on_create_proposal(id,who,expire,call)
+		}
+	}
+}
+
+impl<T: Trait> Module<T>  {
+	// be accountid of organization id for orginfos in the storage
+	pub fn counter2Orgid(c: OrgCount) -> T::AccountId {
+		T::ModuleId::get().into_sub_account(c)
+	}
+	pub fn get_orginfo_by_id(oid: T::AccountId) -> Result<OrgInfoOf<T>, dispatch::DispatchError> {
+		if OrgInfos::<T>::contains_key(oid.clone()) {
+			match <OrgInfos<T>>::get(oid.clone()) {
+				Some(val) => Ok(val),
+				None => Err(Error::<T>::OrganizationNotFound.into()),
+			}
+		}else {
+			Err(Error::<T>::OrganizationNotFound.into())
+		}
+	}
+	/// write the organization info to the storage on chain by create organization
+	pub fn storage_new_organization(oinfo: OrgInfoOf<T>) -> dispatch::DispatchResult {
+		let counter = OrgCounter::get();
+		let new_counter = counter.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
+		let oid = Self::counter2Orgid(counter);
+
+		OrgInfos::<T>::insert(&oid, oinfo.clone());
+		Self::deposit_event(RawEvent::OrganizationCreated(oid, oinfo));
+		OrgCounter::put(new_counter);
+		Ok(())
+	}
+
+	pub fn base_create_proposal(oid: T::AccountId,proposal: ProposalOf<T>) -> dispatch::DispatchResult {
+
+		let proposal_id = Self::make_proposal_id(&proposal);
+		if Proposals::<T>::contains_key(proposal_id) {
+			return Err(Error::<T>::ProposalDuplicate.into());
+		}
+		Proposals::<T>::insert(&proposal_id, proposal.clone());
+		Self::deposit_event(RawEvent::ProposalCreated(oid, proposal_id,proposal.creator()));
+		Ok(())
+	}
+
+	pub fn is_member(oid: T::AccountId,who: &T::AccountId) -> bool {
+		match <OrgInfos<T>>::get(oid.clone()) {
+			Some(val) => val.is_member(who.clone()),
+			None => false,
+		}
+	}
+	// add a member into a organization by orgid
+	pub fn base_add_member_on_orgid(oid: T::AccountId,memberID: T::AccountId) -> dispatch::DispatchResult {
+		OrgInfos::<T>::try_mutate(oid,|infos| -> dispatch::DispatchResult {
+			match infos {
+				Some(org) => {match org.members
+					.iter()
+					.find(|&x| *x==memberID) {
+					None => {
+						org.members.push(memberID);
+						Ok(())
+					},
+					_ => Ok(())
+				}},
+				None => Ok(()),
+			}
+		})
+	}
+	pub fn get_proposal_by_id(pid: ProposalIdOf<T>) -> Result<ProposalOf<T>, dispatch::DispatchError> {
+		match Proposals::<T>::get(pid) {
+			Some(proposal) => Ok(proposal),
+			None => Err(Error::<T>::ProposalNotFound.into()),
 		}
 	}
 }

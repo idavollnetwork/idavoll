@@ -22,7 +22,7 @@
 use frame_support::{
     ensure,dispatch::{DispatchResult},
 };
-use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf, Error,Module, RawEvent, Trait,
+use crate::{OrgCounter, OrgInfos,Proposals,ProposalOf,ProposalIdOf, Error,Module, RawEvent, Trait,
             OrgCount,OrgInfoOf,BalanceOf};
 use crate::utils::*;
 use crate::rules::{BaseRule,OrgRuleParam};
@@ -33,7 +33,7 @@ use codec::{Decode, Encode};
 use sp_runtime::{RuntimeDebug};
 use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
 use sp_runtime::traits::Hash;
-use idavoll_asset::token::BaseToken;
+use idavoll_asset::{token::BaseToken,finance::BaseFinance};
 
 
 impl<T: Trait> Module<T> {
