@@ -83,6 +83,7 @@ pub type ProposalOf<T> = Proposal<
 	<T as frame_system::Trait>::AccountId,
 	BalanceOf<T>,
 	<T as frame_system::Trait>::BlockNumber,
+	ProposalIdOf<T>,
 >;
 pub type OrgRuleParamOf<T> = OrgRuleParam<BalanceOf<T>>;
 

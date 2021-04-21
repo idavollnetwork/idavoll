@@ -25,7 +25,8 @@ use frame_support::{
 use crate::utils::*;
 use crate::rules::{BaseRule,OrgRuleParam};
 use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf,Error,
-            Module, RawEvent, Trait, OrgCount,OrgInfoOf,OrgRuleParamOf};
+            Module, RawEvent, Trait, OrgCount,OrgInfoOf,OrgRuleParamOf,
+            BalanceOf};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -40,10 +41,7 @@ use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, mar
 /// the proposal for pay a little fee, it not staking any asset to do this.
 #[derive(Eq, PartialEq, RuntimeDebug, Encode, Decode, Clone, Default)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct ProposalDetail<AccountId, Balance, BlockNumber>
-    where
-        AccountId: Ord,
-{
+pub struct ProposalDetail<AccountId, Balance, BlockNumber> {
     /// A map of voter => (coins, in agree or against)
     pub votes: BTreeMap<AccountId, (Balance, bool)>,
     /// the creator of the proposal
@@ -101,7 +99,7 @@ impl<AccountId, Balance, BlockNumber> ProposalDetail<AccountId, Balance, BlockNu
 }
 
 pub type ProposalDetailOf<T> = ProposalDetail<<T as frame_system::Trait>::AccountId,
-    <<T as frame_system::Trait>::AccountId>::Balance,<T as frame_system::Trait>::BlockNumber>;
+    BalanceOf<T>,<T as frame_system::Trait>::BlockNumber>;
 
 /// the assetInfo use to the organization manage it's asset, support multiAsset
 /// in a organization, usually it use to vote a proposal.
@@ -169,13 +167,13 @@ impl<AccountId: Ord, Balance,AssetId> OrgInfo<AccountId, Balance,AssetId> {
 /// Represent a proposal as stored by the pallet.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct Proposal<Call, AccountId, Balance, BlockNumber> {
+pub struct Proposal<Call, AccountId, Balance, BlockNumber,Hash> {
     pub org: AccountId,
     pub call: Call,
     pub detail: ProposalDetail<AccountId, Balance, BlockNumber>,
 }
 
-impl<Call, AccountId, Balance, BlockNumber> Proposal<Call, AccountId, Balance, BlockNumber> {
+impl<Call, AccountId, Balance, BlockNumber,Hash> Proposal<Call, AccountId, Balance, BlockNumber,Hash> {
     pub fn new(id: AccountId,calldata: Call,detail: ProposalDetail<AccountId, Balance, BlockNumber>) -> Self {
         Self{
             org: id,
@@ -184,7 +182,7 @@ impl<Call, AccountId, Balance, BlockNumber> Proposal<Call, AccountId, Balance, B
         }
     }
     // get proposal id by hash the content in the proposal
-    pub fn id(&mut self) -> Trait::Hash {
+    pub fn id(&mut self) -> Hash {
         Trait::Hashing::hash_of(&[self.encode()])
     }
     pub fn creator(&self) -> AccountId {
