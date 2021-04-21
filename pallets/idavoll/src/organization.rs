@@ -20,7 +20,7 @@
 ///
 
 use frame_support::{
-	ensure,dispatch,
+	ensure,dispatch::{self,Parameter},
 };
 use crate::utils::*;
 use crate::rules::{BaseRule,OrgRuleParam};
@@ -31,7 +31,7 @@ use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf,Error,
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
-use sp_runtime::{RuntimeDebug, traits::{Saturating, Zero}, DispatchResult};
+use sp_runtime::{RuntimeDebug, traits::{Saturating,AtLeast32BitUnsigned, Zero}, DispatchResult};
 use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
 
 
@@ -44,7 +44,7 @@ use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, mar
 pub struct ProposalDetail<AccountId, Balance, BlockNumber>
     where
         AccountId: Ord + Clone,
-        Balance: Clone,
+        Balance: Clone + Parameter + AtLeast32BitUnsigned,
 {
     /// A map of voter => (coins, in agree or against)
     pub votes: BTreeMap<AccountId, (Balance, bool)>,
@@ -58,7 +58,7 @@ pub struct ProposalDetail<AccountId, Balance, BlockNumber>
 }
 
 impl<AccountId: Ord + Clone,
-    Balance: Clone,
+    Balance: Clone + Parameter + AtLeast32BitUnsigned,
     BlockNumber
     > ProposalDetail<AccountId, Balance, BlockNumber> {
     pub fn new(creator: AccountId,end: BlockNumber,subparam: OrgRuleParam<Balance>) -> Self {
@@ -128,7 +128,12 @@ impl<AssetId> AssetInfo<AssetId> {
 /// This structure is used to encode metadata about an organization.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct OrgInfo<AccountId, Balance,AssetId> {
+pub struct OrgInfo<AccountId, Balance,AssetId>
+where
+    AccountId: Ord + Clone,
+    Balance: Parameter + Clone,
+    AssetId: Clone,
+{
     /// A set of accounts of an organization.
     pub members: Vec<AccountId>,
     /// params for every organization,will set on create organization
@@ -137,7 +142,11 @@ pub struct OrgInfo<AccountId, Balance,AssetId> {
     pub asset: AssetInfo<AssetId>,
 }
 
-impl<AccountId: Ord, Balance,AssetId> OrgInfo<AccountId, Balance,AssetId> {
+impl<
+    AccountId: Ord + Clone,
+    Balance: Parameter + Clone,
+    AssetId: Clone,
+> OrgInfo<AccountId, Balance,AssetId> {
     pub fn new() -> Self {
         Self{
             members: Vec::new(),
@@ -177,7 +186,8 @@ impl<AccountId: Ord, Balance,AssetId> OrgInfo<AccountId, Balance,AssetId> {
 pub struct Proposal<Call, AccountId, Balance, BlockNumber,Hash>
 where
     AccountId: Ord + Clone,
-    Balance: Clone,
+    Balance: Clone + Parameter + AtLeast32BitUnsigned,
+    BlockNumber: Eq + PartialOrd,
 {
     pub org: AccountId,
     pub call: Call,
@@ -189,8 +199,8 @@ where
 impl<
     Call,
     AccountId: Ord + Clone,
-    Balance: Clone,
-    BlockNumber,
+    Balance: Clone + Parameter + AtLeast32BitUnsigned,
+    BlockNumber: Eq + PartialOrd,
     Hash
 > Proposal<Call, AccountId, Balance, BlockNumber,Hash> {
     pub fn new(id: AccountId,calldata: Call,detail: ProposalDetail<AccountId, Balance, BlockNumber>) -> Self {

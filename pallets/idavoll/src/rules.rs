@@ -17,7 +17,7 @@
 
 
 
-use frame_support::{ ensure,dispatch::{DispatchResult} };
+use frame_support::{ ensure,dispatch::{DispatchResult,Parameter} };
 #[cfg(feature = "std")]
 use std::collections::{HashMap as Map, hash_map::Entry as MapEntry};
 use sp_runtime::{
@@ -54,7 +54,10 @@ pub trait BaseRule {
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct OrgRuleParam<Balance> {
+pub struct OrgRuleParam<Balance>
+where
+    Balance: Parameter + Clone,
+{
     /// Minimum approval votes threshold in a organization
     pub minAffirmative: Balance,
     /// Maximum negative votes threshold in a organization
@@ -64,7 +67,7 @@ pub struct OrgRuleParam<Balance> {
     pub abstention: Balance,
 }
 
-impl<Balance> OrgRuleParam<Balance> {
+impl<Balance: Parameter + Clone> OrgRuleParam<Balance> {
     pub fn default() -> Self {
         Self{
             minAffirmative: Zero::zero(),
