@@ -243,7 +243,9 @@ impl<T: Trait> Module<T>  {
                               ,call: Box<<T as Trait>::Call>) ->dispatch::DispatchResult {
         let oid = Self::counter2Orgid(id);
         let org = Self::get_orginfo_by_id(oid)?;
-        org.param.inherit_valid(sub_param.clone())?;
+        if !org.param.inherit_valid(sub_param.clone()) {
+            return Err(Error::<T>::WrongRuleParam.into());
+        }
 
         let proposal = Proposal {
             org:    oid.clone(),

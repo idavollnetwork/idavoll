@@ -90,13 +90,10 @@ impl<Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned> OrgRulePar
             return yes_amount > Perbill::from_percent(self.minAffirmative) * total
         }
     }
-    pub fn inherit_valid(&self,subparam: OrgRuleParam<Balance>) -> DispatchResult {
-        if subparam.minAffirmative >= self.minAffirmative
+    pub fn inherit_valid(&self,subparam: OrgRuleParam<Balance>) -> bool {
+        return subparam.minAffirmative >= self.minAffirmative
             && subparam.maxDissenting <= self.maxDissenting
-            && subparam.abstention <= self.abstention {
-            Ok(())
-        }
-        Err(Error::<Trait>::WrongRuleParam.into())
+            && subparam.abstention <= self.abstention ;
     }
 }
 
