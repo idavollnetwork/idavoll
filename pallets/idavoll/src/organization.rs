@@ -31,7 +31,7 @@ use crate::{Counter, OrgInfos,Proposals,ProposalOf,ProposalIdOf,Error,
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
-use sp_runtime::{RuntimeDebug, traits::{Saturating,AtLeast32BitUnsigned, Zero}, DispatchResult};
+use sp_runtime::{RuntimeDebug, traits::{Hash as FrameHash,Saturating,AtLeast32BitUnsigned,Member, Zero}, DispatchResult};
 use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, marker};
 
 
@@ -44,7 +44,8 @@ use sp_std::{cmp::PartialOrd,prelude::Vec, collections::btree_map::BTreeMap, mar
 pub struct ProposalDetail<AccountId, Balance, BlockNumber>
     where
         AccountId: Ord + Clone,
-        Balance: Clone + Parameter + AtLeast32BitUnsigned,
+        Balance: Member + Parameter + AtLeast32BitUnsigned + Default,
+        BlockNumber: Eq + PartialOrd + Clone,
 {
     /// A map of voter => (coins, in agree or against)
     pub votes: BTreeMap<AccountId, (Balance, bool)>,
@@ -58,8 +59,8 @@ pub struct ProposalDetail<AccountId, Balance, BlockNumber>
 }
 
 impl<AccountId: Ord + Clone,
-    Balance: Clone + Parameter + AtLeast32BitUnsigned,
-    BlockNumber
+    Balance: Member + Parameter + AtLeast32BitUnsigned + Default,
+    BlockNumber: Eq + PartialOrd + Clone,
     > ProposalDetail<AccountId, Balance, BlockNumber> {
     pub fn new(creator: AccountId,end: BlockNumber,subparam: OrgRuleParam<Balance>) -> Self {
         ProposalDetail{
@@ -82,7 +83,7 @@ impl<AccountId: Ord + Clone,
         Ok(())
     }
     fn summary(&self) -> (Balance,Balance) {
-        let (yes_balance,no_balance) = (Zero::zero(),Zero::zero());
+        let (mut yes_balance,mut no_balance) = (Balance::default(),Balance::default());
         self.votes.iter().for_each(|val|{
             if val.1.1 {
                 yes_balance = yes_balance.saturating_add(val.1.0.clone());
@@ -112,11 +113,11 @@ pub type ProposalDetailOf<T> = ProposalDetail<<T as frame_system::Trait>::Accoun
 /// in a organization, usually it use to vote a proposal.
 #[derive(Eq, PartialEq, RuntimeDebug, Encode, Decode, Clone, Default)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct AssetInfo<AssetId> {
+pub struct AssetInfo<AssetId: Clone + Default> {
     /// kind of asset
     pub id: AssetId,
 }
-impl<AssetId> AssetInfo<AssetId> {
+impl<AssetId: Clone + Default> AssetInfo<AssetId> {
     pub fn id(&self) -> AssetId {
         self.id.clone()
     }
@@ -131,8 +132,8 @@ impl<AssetId> AssetInfo<AssetId> {
 pub struct OrgInfo<AccountId, Balance,AssetId>
 where
     AccountId: Ord + Clone,
-    Balance: Parameter + Clone,
-    AssetId: Clone,
+    Balance: Parameter + Member,
+    AssetId: Clone + Default,
 {
     /// A set of accounts of an organization.
     pub members: Vec<AccountId>,
@@ -144,8 +145,8 @@ where
 
 impl<
     AccountId: Ord + Clone,
-    Balance: Parameter + Clone,
-    AssetId: Clone,
+    Balance: Parameter + Member,
+    AssetId: Clone + Default,
 > OrgInfo<AccountId, Balance,AssetId> {
     pub fn new() -> Self {
         Self{
@@ -183,37 +184,29 @@ impl<
 /// Represent a proposal as stored by the pallet.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub struct Proposal<Call, AccountId, Balance, BlockNumber,Hash>
+pub struct Proposal<Call, AccountId, Balance, BlockNumber>
 where
     AccountId: Ord + Clone,
-    Balance: Clone + Parameter + AtLeast32BitUnsigned,
-    BlockNumber: Eq + PartialOrd,
+    Balance: Member + Parameter + AtLeast32BitUnsigned + Default,
+    BlockNumber: Eq + PartialOrd + Clone,
 {
     pub org: AccountId,
     pub call: Call,
     pub detail: ProposalDetail<AccountId, Balance, BlockNumber>,
-    /// accepting a `Hash` type.
-    _phantom: marker::PhantomData<Hash>,
 }
 
 impl<
     Call,
     AccountId: Ord + Clone,
-    Balance: Clone + Parameter + AtLeast32BitUnsigned,
-    BlockNumber: Eq + PartialOrd,
-    Hash
-> Proposal<Call, AccountId, Balance, BlockNumber,Hash> {
+    Balance: Member + Parameter + AtLeast32BitUnsigned + Default,
+    BlockNumber: Eq + PartialOrd + Clone,
+> Proposal<Call, AccountId, Balance, BlockNumber> {
     pub fn new(id: AccountId,calldata: Call,detail: ProposalDetail<AccountId, Balance, BlockNumber>) -> Self {
         Self{
             org: id,
             call: calldata,
             detail: detail,
-            _phantom: marker::PhantomData,
         }
-    }
-    // get proposal id by hash the content in the proposal
-    pub fn id(&mut self) -> Hash {
-        Trait::Hashing::hash_of(&[self.encode()])
     }
     pub fn creator(&self) -> AccountId {
         self.detail.creator()
@@ -259,7 +252,6 @@ impl<T: Trait> Module<T>  {
             org:    oid.clone(),
             call: call.encode(),
             detail: ProposalDetail::new(who.clone(),expire,sub_param.clone()),
-            _phantom: marker::PhantomData,
         };
         Self::base_create_proposal(oid.clone(),proposal)
     }
@@ -275,15 +267,16 @@ impl<T: Trait> Module<T>  {
     }
     fn base_create_proposal(oid: T::AccountId,proposal: ProposalOf<T>) -> dispatch::DispatchResult {
 
-        let proposal_id = proposal.clone().id();
+        let proposal_id = Self::make_proposal_id(&proposal);
         if Proposals::<T>::contains_key(proposal_id) {
             return Err(Error::<T>::ProposalDuplicate.into());
         }
         Proposals::<T>::insert(&proposal_id, proposal.clone());
         Self::deposit_event(RawEvent::ProposalCreated(oid, proposal_id,proposal.creator()));
     }
-    fn make_proposal_id(proposal: ProposalOf<T>) -> ProposalIdOf<T> {
-        proposal.clone().id()
+    /// get proposal id by hash the content in the proposal
+    fn make_proposal_id(proposal: &ProposalOf<T>) -> ProposalIdOf<T> {
+        T::Hashing::hash_of(&[proposal.encode()])
     }
     pub fn is_member(oid: T::AccountId,who: &T::AccountId) -> bool {
         match OrgInfo::<T>::try_get(oid) {

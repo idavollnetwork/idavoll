@@ -22,7 +22,7 @@ use frame_support::{ ensure,dispatch::{DispatchResult,Parameter} };
 use std::collections::{HashMap as Map, hash_map::Entry as MapEntry};
 use sp_runtime::{
     RuntimeDebug,Perbill,
-    traits::{Saturating, Zero,Hash},
+    traits::{Saturating, Zero,Hash,Member},
 };
 #[cfg(not(feature = "std"))]
 use sp_std::collections::btree_map::{BTreeMap as Map, Entry as MapEntry};
@@ -56,7 +56,7 @@ pub trait BaseRule {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct OrgRuleParam<Balance>
 where
-    Balance: Parameter + Clone,
+    Balance: Parameter + Member,
 {
     /// Minimum approval votes threshold in a organization
     pub minAffirmative: Balance,
@@ -67,7 +67,7 @@ where
     pub abstention: Balance,
 }
 
-impl<Balance: Parameter + Clone> OrgRuleParam<Balance> {
+impl<Balance: Parameter + Member> OrgRuleParam<Balance> {
     pub fn default() -> Self {
         Self{
             minAffirmative: Zero::zero(),
