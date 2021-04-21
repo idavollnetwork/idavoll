@@ -21,10 +21,14 @@
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// https://substrate.dev/docs/en/knowledgebase/runtime/frame
 
-use frame_support::{decl_module, decl_storage, decl_event, decl_error,
-					dispatch::{self,Dispatchable, Parameter, PostDispatchInfo},
-					traits::{Get,EnsureOrigin},
-					ensure,weights::{GetDispatchInfo, Weight},
+use frame_support::{
+	codec::{Decode, Encode},
+	decl_module, decl_storage, decl_event, decl_error,
+	dispatch::{
+		self,Dispatchable, Parameter, PostDispatchInfo,
+	},
+	traits::{Get,EnsureOrigin},
+	ensure,weights::{GetDispatchInfo, Weight},
 };
 use frame_system::ensure_signed;
 use sp_runtime::{Permill, ModuleId, RuntimeDebug,
@@ -60,8 +64,13 @@ pub trait WeightInfo {
 pub trait Trait: frame_system::Trait {
 	/// Because this pallet emits events, it depends on the runtime's definition of an event.
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-	type Call: Parameter + GetDispatchInfo + From<frame_system::Call<Self>>
-	+ Dispatchable<Origin = Self::Origin, PostInfo = PostDispatchInfo>;
+
+	/// The outer call dispatch type.
+	type Call: Parameter
+	+ Dispatchable<Origin=Self::Origin, PostInfo=PostDispatchInfo>
+	+ From<frame_system::Call<Self>>
+	+ GetDispatchInfo;
+
 	/// The idavoll's module id, used for deriving its sovereign account ID,use to organization id.
 	type ModuleId: Get<ModuleId>;
 	/// the Asset Handler will handle all op in the voting about asset operation.
@@ -164,7 +173,7 @@ decl_module! {
 		pub fn create_origanization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let asset_id = Self::create_new_token(owner.clone(),total);
-			let info_clone = info.clone();
+			let mut info_clone = info.clone();
 			info_clone.add_member(owner.clone());
 			info_clone.set_asset_id(asset_id.clone());
 			Self::storage_new_organization(info_clone.clone())
@@ -198,7 +207,7 @@ decl_module! {
 			let who = ensure_signed(origin)?;
 			let cur = frame_system::Module::<T>::block_number();
 			let expire = cur.saturating_add(length);
-			Self::on_create_proposal(id,who,expire,call)
+			Self::on_create_proposal(id,who,expire,sub_param,call)
 		}
 	}
 }
@@ -269,5 +278,27 @@ impl<T: Trait> Module<T>  {
 			Some(proposal) => Ok(proposal),
 			None => Err(Error::<T>::ProposalNotFound.into()),
 		}
+	}
+	pub fn remove_proposal_by_id(pid: ProposalIdOf<T>) {
+		Proposals::<T>::remove(pid);
+	}
+	/// add vote infos in the proposal item on the storage
+	pub fn base_vote_on_proposal(pid: ProposalIdOf<T>, voter: T::AccountId,
+								 value: BalanceOf<T>, yesorno: bool) -> dispatch::DispatchResult {
+		Proposals::<T>::try_mutate(pid,|proposal| -> dispatch::DispatchResult {
+			if let Some(p) = proposal {
+				p.detail.vote(voter.clone(),value,yesorno)?;
+				// *proposal = Some(p);
+			};
+			Ok(())
+		})?;
+		Ok(())
+	}
+	pub fn base_call_dispatch(pid: ProposalIdOf<T>,proposal: ProposalOf<T>) -> dispatch::DispatchResult {
+		// remove the proposal from the storage by the proposal passed
+		let call = <T as Trait>::Call::decode(&mut &proposal.clone().call[..]).map_err(|_| Error::<T>::ProposalDecodeFailed)?;
+		let res = call.dispatch(frame_system::RawOrigin::Signed(proposal.clone().org).into());
+		Self::deposit_event(RawEvent::ProposalFinalized(pid, res.map(|_| ()).map_err(|e| e.error)));
+		Ok(())
 	}
 }

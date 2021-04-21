@@ -42,7 +42,7 @@ use idavoll_asset::{token::BaseToken,finance::BaseFinance};
 pub struct ProposalDetail<AccountId, Balance, BlockNumber>
     where
         AccountId: Ord + Clone,
-        Balance: Member + Parameter + AtLeast32BitUnsigned + Default,
+        Balance: Member + Parameter + AtLeast32BitUnsigned + Copy + Default,
         BlockNumber: Eq + PartialOrd + Clone,
 {
     /// A map of voter => (coins, in agree or against)
@@ -57,7 +57,7 @@ pub struct ProposalDetail<AccountId, Balance, BlockNumber>
 }
 
 impl<AccountId: Ord + Clone,
-    Balance: Member + Parameter + AtLeast32BitUnsigned + Default,
+    Balance: Member + Parameter + AtLeast32BitUnsigned + Copy + Default,
     BlockNumber: Eq + PartialOrd + Clone,
     > ProposalDetail<AccountId, Balance, BlockNumber> {
     pub fn new(creator: AccountId,end: BlockNumber,subparam: OrgRuleParam<Balance>) -> Self {
@@ -89,7 +89,7 @@ impl<AccountId: Ord + Clone,
                 no_balance = no_balance.saturating_add(val.1.0.clone());
             }
         });
-        return (yes_balance,no_balance)
+        return (yes_balance.clone(),no_balance.clone())
     }
     pub fn is_expire(&self,current: BlockNumber) -> bool {
         return self.end_dt < current
@@ -158,7 +158,7 @@ impl<
         self.members.sort();
     }
     pub fn is_member(&self,mid: AccountId) -> bool {
-        match self.members.iter().find(|&&x| mid.eq(&x)) {
+        match self.members.iter().find(|&x| mid.eq(&x)) {
             Some(v) => true,
             _ =>   false,
         }
@@ -185,7 +185,7 @@ impl<
 pub struct Proposal<Call, AccountId, Balance, BlockNumber>
 where
     AccountId: Ord + Clone,
-    Balance: Member + Parameter + AtLeast32BitUnsigned + Default,
+    Balance: Member + Parameter + AtLeast32BitUnsigned + Copy + Default,
     BlockNumber: Eq + PartialOrd + Clone,
 {
     pub org: AccountId,
@@ -196,7 +196,7 @@ where
 impl<
     Call,
     AccountId: Ord + Clone,
-    Balance: Member + Parameter + AtLeast32BitUnsigned + Default,
+    Balance: Member + Parameter + AtLeast32BitUnsigned + Copy + Default,
     BlockNumber: Eq + PartialOrd + Clone,
 > Proposal<Call, AccountId, Balance, BlockNumber> {
     pub fn new(id: AccountId,calldata: Call,detail: ProposalDetail<AccountId, Balance, BlockNumber>) -> Self {
@@ -225,7 +225,7 @@ impl<T: Trait> Module<T>  {
 
         Ok(T::AssetHandle::total(org.get_asset_id()))
     }
-    fn is_pass(proposal: ProposalOf<T>) -> bool {
+    pub fn is_pass(proposal: ProposalOf<T>) -> bool {
         let total_balance = Self::get_total_token_by_oid(proposal.org);
         match total_balance {
             Ok(balance) => proposal.detail.pass(balance),
@@ -236,13 +236,13 @@ impl<T: Trait> Module<T>  {
 
     pub fn reserve_to_Vault(id: u32,who: T::AccountId,value: T::Balance) -> DispatchResult {
         let oid = Self::counter2Orgid(id);
-        let org = Self::get_orginfo_by_id(oid)?;
+        let org = Self::get_orginfo_by_id(oid.clone())?;
         T::Finance::reserve_to_org(oid.clone(),who.clone(),value)
     }
     pub fn on_create_proposal(id:u32,who: T::AccountId,expire: T::BlockNumber,sub_param: OrgRuleParamOf<T>
                               ,call: Box<<T as Trait>::Call>) ->dispatch::DispatchResult {
         let oid = Self::counter2Orgid(id);
-        let org = Self::get_orginfo_by_id(oid)?;
+        let org = Self::get_orginfo_by_id(oid.clone())?;
         if !org.param.inherit_valid(sub_param.clone()) {
             return Err(Error::<T>::WrongRuleParam.into());
         }
@@ -260,8 +260,8 @@ impl<T: Trait> Module<T>  {
     }
     pub fn on_add_member(owner: T::AccountId,who: T::AccountId,id: u32) -> dispatch::DispatchResult {
         let oid = Self::counter2Orgid(id);
-        let org = Self::get_orginfo_by_id(oid)?;
-        ensure!(Self::is_member(oid,&owner),Error::<T>::NotOwnerByOrg);
+        let org = Self::get_orginfo_by_id(oid.clone())?;
+        ensure!(Self::is_member(oid.clone(),&owner),Error::<T>::NotOwnerByOrg);
         Self::base_add_member_on_orgid(oid.clone(),who.clone())
     }
 

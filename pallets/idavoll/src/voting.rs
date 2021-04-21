@@ -46,7 +46,7 @@ impl<T: Trait> Module<T> {
                             yesorno: bool,
                             height: T::BlockNumber,
     ) -> DispatchResult {
-        if !Self::is_member(oid,voter) {
+        if !Self::is_member(oid.clone(),&voter) {
             return Err(Error::<T>::NotMember.into());
         }
         let oinfo = Self::get_orginfo_by_id(oid.clone())?;
@@ -55,34 +55,26 @@ impl<T: Trait> Module<T> {
             return Err(Error::<T>::ProposalExpired.into());
         }
         // lock the voter's balance
-        T::AssetHandle::lock(oinfo.get_asset_id(),voter.clone(),value)?;
-        Proposals::<T>::try_mutate(pid,|proposal| -> DispatchResult {
-            if let Some(p) = proposal {
-                p.detail.vote(voter.clone(),value,yesorno)?;
-                *proposal = Some(p);
-            };
-            Ok(())
-        })?;
+        let aid = oinfo.get_asset_id();
+        T::AssetHandle::lock(aid.clone(),&voter.clone(),value)?;
+        Self::base_vote_on_proposal(pid,voter,value,yesorno)?;
         // check the proposal can closed
-        Self::try_close_proposal(oid.clone(),pid.clone(),height)
+        Self::try_close_proposal(aid.clone(),pid.clone(),height)
     }
     /// close the proposal when the proposal was expire or passed.
     /// it will auto unlocked the voter's asset
     pub fn try_close_proposal(aid: T::AssetId,pid: ProposalIdOf<T>,height: T::BlockNumber) -> DispatchResult {
         let proposal = Self::get_proposal_by_id(pid)?;
         let is_expire = proposal.detail.is_expire(height);
-        let is_pass = Self.is_pass(proposal.clone());
+        let is_pass = Self::is_pass(proposal.clone());
         if is_pass {
-            // remove the proposal from the storage
-            let call = <T as Trait>::Call::decode(&mut &proposal.clone().call[..]).map_err(|_| Error::<T>::ProposalDecodeFailed)?;
-            let res = call.dispatch(frame_system::RawOrigin::Signed(proposal.clone().org).into());
-            Self::deposit_event(RawEvent::ProposalFinalized(pid, res.map(|_| ()).map_err(|e| e.error)));
+            Self::base_call_dispatch(pid.clone(),proposal.clone())?;
         }
         if is_expire || is_pass {
             let clone_proposal = proposal.clone();
-            Proposals::<T>::remove(pid);
+            Self::remove_proposal_by_id(pid.clone());
             clone_proposal.detail.votes.iter().for_each(|val|{
-                T::AssetHandle::unlock(aid,val.0.clone(),val.1.0.clone())?;
+                T::AssetHandle::unlock(aid,&val.0.clone(),val.1.0.clone());
             });
             Self::deposit_event(RawEvent::ProposalPassed(pid));
         }
