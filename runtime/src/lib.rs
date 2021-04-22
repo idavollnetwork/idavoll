@@ -28,7 +28,7 @@ use sp_version::NativeVersion;
 pub use sp_runtime::BuildStorage;
 pub use pallet_timestamp::Call as TimestampCall;
 pub use pallet_balances::Call as BalancesCall;
-pub use sp_runtime::{Permill, Perbill};
+pub use sp_runtime::{Permill, Perbill,ModuleId};
 pub use frame_support::{
 	construct_runtime, parameter_types, StorageValue,
 	traits::{KeyOwnerProofSystem, Randomness},
@@ -40,6 +40,7 @@ pub use frame_support::{
 
 pub use pallet_assets;
 pub use idavoll_asset;
+pub use pallet_idavoll;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -266,9 +267,28 @@ impl pallet_assets::Trait for Runtime {
 	type AssetId = u32;
 	type Event = Event;
 }
-// impl idavoll_asset::Trait for Runtime {
-// 	type Event = Event;
-// }
+parameter_types! {
+	pub const IdvAssetModuleId: ModuleId = ModuleId(*b"py/asset");
+	pub const IdavollModuleId: ModuleId = ModuleId(*b"py/idvol");
+}
+
+impl idavoll_asset::Trait for Runtime {
+	type Event = Event;
+	type Balance = Balance;
+	type AssetId = u32;
+	type Currency = Balances;
+	type ModuleId = IdvAssetModuleId;
+}
+
+impl pallet_idavoll::Trait for Runtime {
+	type Event = Event;
+	type Call = Call;
+	type Balance = Balance;
+	type AssetId = u32;
+	type ModuleId = IdavollModuleId;
+	type AssetHandle = IdvAsset;
+	type Finance = IdvAsset;
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -287,7 +307,10 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 		// Include the custom logic from the template pallet in the runtime.
 		Assets: pallet_assets::{Module, Call, Storage, Event<T>},
-		// IdavollAsset: idavoll_asset::{Module, Call, Storage, Event<T>},
+		// asset for vote and local asset(idv)
+		IdvAsset: idavoll_asset::{Module, Call, Storage, Event<T>},
+		// idavoll for DAO
+		Idavoll: pallet_idavoll::{Module, Call, Storage, Event<T>},
 	}
 );
 
