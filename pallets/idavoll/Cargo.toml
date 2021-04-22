@@ -6,7 +6,7 @@ homepage = 'https://idavoll.network'
 license = 'GPL-3.0'
 name = 'pallet-idavoll'
 repository = 'https://github.com/idavollnetwork/idavoll/'
-version = '0.0.1'
+version = '1.0.0'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
