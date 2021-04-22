@@ -40,7 +40,7 @@ pub mod finance;
 
 /// The module configuration trait.
 pub trait Trait: frame_system::Trait {
-    /// The treasury's module id, used for deriving its sovereign account ID.
+    /// The idv-asset's module id, used for deriving its sovereign account ID.
     type ModuleId: Get<ModuleId>;
 
     /// The staking balance.(for the local asset(idv))
