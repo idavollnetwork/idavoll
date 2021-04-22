@@ -23,7 +23,7 @@ use idavoll_runtime::Block;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Substrate Node".into()
+		"Idavoll Node".into()
 	}
 
 	fn impl_version() -> String {
