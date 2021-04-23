@@ -1,0 +1,55 @@
+{
+  "Address": "AccountId",
+  "BalanceOf": "Balance",
+  "LocalBalance": "Balance",
+  "ProposalId": "Hash",
+  "ProposalIdOf": "ProposalId",
+  "OrgCount": "u32",
+  "AssetId": "u32",
+  "BlockNumber": "u32",
+
+  "ProposalDetail": {
+    "votes": "BTreeMap<AccountId, (Balance, bool)>",
+    "creator": "AccountId",
+    "end_dt": "BlockNumber",
+    "sub_param": "OrgRuleParam"
+  },
+  "ProposalDetailOf":"ProposalDetail",
+
+  "Proposal": {
+    "org": "AccountId",
+    "call": "Vec<u8>",
+    "detail": "ProposalDetail"
+  },
+
+  "ProposalOf": "Proposal",
+
+  "AssetInfo": {
+    "id": "AssetId"
+  },
+
+  "OrgRuleParam": {
+    "minAffirmative": "u32",
+    "maxDissenting": "u32",
+    "abstention": "u32"
+  },
+  "OrgRuleParamOf": "OrgRuleParam",
+
+  "OrgInfo": {
+    "members": "Vec<AccountId>",
+    "param": "OrgRuleParam",
+    "asset": "AssetInfo"
+  },
+  "OrgInfoOf": "OrgInfo",
+
+
+  "AccountAssetMetadata": {
+    "free": "Balance",
+    "frozen": "Balance"
+  },
+  "AssetDetails": {
+    "issuer": "AccountId",
+    "init": "bool",
+    "supply": "Balance"
+  }
+}
