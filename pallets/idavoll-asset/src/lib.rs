@@ -220,7 +220,7 @@ impl<T: Trait> Module<T> {
             return Ok(());
         }
 
-        Balances::<T>::try_mutate((id, origin.clone()), |origin_account| -> dispatch::DispatchResult {
+        Balances::<T>::mutate((id, origin.clone()), |origin_account| -> dispatch::DispatchResult {
             ensure!(origin_account.free >= amount, Error::<T>::BalanceLow);
             origin_account.free = origin_account.free.checked_sub(&amount)
                 .ok_or(Error::<T>::BalanceLow)?;
@@ -339,6 +339,10 @@ mod test {
     type System = frame_system::Module<Test>;
     type IdvBalances = pallet_balances::Module<Test>;
 
+    const A: u64 = 100;
+    const B: u64 = 200;
+    const ORGID: u64 = 1000;
+
     #[derive(Clone, Eq, PartialEq)]
     pub struct Test;
     parameter_types! {
@@ -399,7 +403,15 @@ mod test {
     type IdavollAsset = Module<Test>;
 
     fn new_test_ext() -> sp_io::TestExternalities {
-        frame_system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
+        let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+        let genesis = pallet_balances::GenesisConfig::<Test> {
+            balances: vec![
+                (A, 100),
+                (B, 200),
+            ],
+        };
+        genesis.assimilate_storage(&mut t).unwrap();
+        t.into()
     }
 
     #[test]
@@ -446,56 +458,46 @@ mod test {
             assert_eq!(IdavollAsset::base_mint(0,&2,100), Err(Error::<Test>::NoPermission.into()));
             assert_ok!(IdavollAsset::base_burn(0, &1,20));
             assert_eq!(IdavollAsset::total_issuances(0), 180);
+            assert_eq!(IdavollAsset::base_burn(0,&2,100), Err(Error::<Test>::NoPermission.into()));
+            assert_eq!(IdavollAsset::base_burn(0,&1,1000), Err(Error::<Test>::BalanceLow.into()));
         });
     }
 
-    // #[test]
-    // fn lock_and_unlock_should_not_work() {
-    //     new_test_ext().execute_with(|| {
-    //         assert_ok!(IdavollAsset::issue(Origin::signed(1), 100));
-    //         assert_eq!(IdavollAsset::balance(0, 1), 100);
-    //         assert_ok!(IdavollAsset::transfer(Origin::signed(1), 0, 2, 50));
-    //         assert_eq!(IdavollAsset::balance(0, 1), 50);
-    //         assert_eq!(IdavollAsset::balance(0, 2), 50);
-    //         assert_ok!(IdavollAsset::destroy(Origin::signed(1), 0));
-    //         assert_eq!(IdavollAsset::balance(0, 1), 0);
-    //         assert_noop!(IdavollAsset::transfer(Origin::signed(1), 0, 1, 50), Error::<Test>::BalanceLow);
-    //     });
-    // }
-    //
-    // #[test]
-    // fn transferring_less_than_one_unit_should_not_work() {
-    //     new_test_ext().execute_with(|| {
-    //         assert_ok!(IdavollAsset::issue(Origin::signed(1), 100));
-    //         assert_eq!(IdavollAsset::balance(0, 1), 100);
-    //         assert_noop!(IdavollAsset::transfer(Origin::signed(1), 0, 2, 0), Error::<Test>::AmountZero);
-    //     });
-    // }
-    //
-    // #[test]
-    // fn transferring_more_units_than_total_supply_should_not_work() {
-    //     new_test_ext().execute_with(|| {
-    //         assert_ok!(IdavollAsset::issue(Origin::signed(1), 100));
-    //         assert_eq!(IdavollAsset::balance(0, 1), 100);
-    //         assert_noop!(IdavollAsset::transfer(Origin::signed(1), 0, 2, 101), Error::<Test>::BalanceLow);
-    //     });
-    // }
-    //
-    // #[test]
-    // fn destroying_asset_balance_with_positive_balance_should_work() {
-    //     new_test_ext().execute_with(|| {
-    //         assert_ok!(IdavollAsset::issue(Origin::signed(1), 100));
-    //         assert_eq!(IdavollAsset::balance(0, 1), 100);
-    //         assert_ok!(IdavollAsset::destroy(Origin::signed(1), 0));
-    //     });
-    // }
-    //
-    // #[test]
-    // fn destroying_asset_balance_with_zero_balance_should_not_work() {
-    //     new_test_ext().execute_with(|| {
-    //         assert_ok!(IdavollAsset::issue(Origin::signed(1), 100));
-    //         assert_eq!(IdavollAsset::balance(0, 2), 0);
-    //         assert_noop!(IdavollAsset::destroy(Origin::signed(2), 0), Error::<Test>::BalanceZero);
-    //     });
-    // }
+    #[test]
+    fn lock_and_unlock_should_not_work() {
+        new_test_ext().execute_with(|| {
+            assert_eq!(IdavollAsset::create_token(1, 100),0);
+            assert_eq!(IdavollAsset::free_balance(0, &1), 100);
+            assert_ok!(IdavollAsset::transfer(Origin::signed(1), 0, 2, 40));
+            assert_eq!(IdavollAsset::free_balance(0, &1), 60);
+            assert_eq!(IdavollAsset::free_balance(0, &2), 40);
+            assert_ok!(IdavollAsset::base_lock(0, &1,20));
+            assert_eq!(IdavollAsset::free_balance(0, &1), 40);
+            assert_eq!(IdavollAsset::total_balance(0, &1), 60);
+            assert_ok!(IdavollAsset::base_unlock(0, &1,20));
+            assert_eq!(IdavollAsset::free_balance(0, &1), 60);
+            assert_eq!(IdavollAsset::total_balance(0, &1), 60);
+            assert_ok!(IdavollAsset::base_lock(0, &1,60));
+            assert_eq!(IdavollAsset::free_balance(0, &1), 0);
+            assert_eq!(IdavollAsset::total_balance(0, &1), 60);
+            assert_ok!(IdavollAsset::base_unlock(0, &1,20));
+            assert_eq!(IdavollAsset::free_balance(0, &1), 20);
+            assert_eq!(IdavollAsset::total_balance(0, &1), 60);
+            assert_noop!(IdavollAsset::base_lock(0, &2, 50), Error::<Test>::BalanceLow);
+            assert_noop!(IdavollAsset::base_unlock(0, &2, 50), Error::<Test>::BalanceLow);
+        });
+    }
+
+    #[test]
+    fn Vault_transfer_and_balance_should_not_work() {
+        new_test_ext().execute_with(|| {
+            assert_noop!(IdavollAsset::Vault_balance_of(ORGID),Error::<Test>::UnknownOwnerID);
+            assert_ok!(IdavollAsset::transfer_to_Vault(ORGID, A,30));
+            assert_eq!(IdavollAsset::Vault_balance_of(ORGID),Ok(30));
+            assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),30);
+            assert_eq!(IdvBalances::free_balance(A),70);
+            assert_noop!(IdavollAsset::transfer_to_Vault(ORGID, 1, 50), Error::<Test>::BalanceLow);
+            assert_noop!(IdavollAsset::transfer_to_Vault(ORGID, A, 100), Error::<Test>::BalanceLow);
+        });
+    }
 }
