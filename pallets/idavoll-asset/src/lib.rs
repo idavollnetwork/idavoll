@@ -227,17 +227,11 @@ impl<T: Trait> Module<T> {
             Ok(())
         })?;
 
-        Balances::<T>::try_mutate((id, target.clone()), |a| -> dispatch::DispatchResult {
-            a.free.saturating_add(amount);
+        Balances::<T>::mutate((id, target.clone()), |a| -> dispatch::DispatchResult {
+            let amount = a.free.saturating_add(amount);
+            a.free = amount;
             Ok(())
         })
-            .or_else(|_|-> dispatch::DispatchResult {
-                <Balances<T>>::insert((id, target.clone()), AccountAssetMetadata {
-                    free:    amount,
-                    frozen: Zero::zero(),
-                });
-                Ok(())
-            })
     }
     fn base_mint(id: T::AssetId, issuer: &T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
         TotalSupply::<T>::try_mutate(id, |maybe_asset| {
@@ -310,14 +304,10 @@ impl<T: Trait> Module<T> {
         let Vault_account = Self::account_id();
         T::Currency::transfer(&who,&Vault_account,value,AllowDeath)?;
 
-        Finances::<T>::try_mutate(oid.clone(), |a| -> dispatch::DispatchResult {
+        Finances::<T>::mutate(oid.clone(), |a| -> dispatch::DispatchResult {
             *a = a.saturating_add(value.clone());
             Ok(())
         })
-            .or_else(|_|-> dispatch::DispatchResult {
-                <Finances<T>>::insert(oid.clone(), value.clone());
-                Ok(())
-            })
     }
     /// transfer the balance to `to` from finance's Vault by Call<> function
     pub fn spend_organization_Vault(oid: T::AccountId,to: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
@@ -427,36 +417,40 @@ mod test {
         });
     }
 
+    #[test]
+    fn base_transfer_should_work() {
+        new_test_ext().execute_with(|| {
+            assert_eq!(IdavollAsset::create_token(1, 100),0);
+            assert_eq!(IdavollAsset::free_balance(0, &1), 100);
+            assert_eq!(IdavollAsset::total_balance(0, &1), 100);
+            assert_ok!(IdavollAsset::transfer(Origin::signed(1), 0, 2, 50));
+            assert_eq!(IdavollAsset::free_balance(0, &1), 50);
+            assert_eq!(IdavollAsset::free_balance(0, &2), 50);
+            assert_ok!(IdavollAsset::transfer(Origin::signed(2), 0, 3, 31));
+            assert_eq!(IdavollAsset::free_balance(0, &1), 50);
+            assert_eq!(IdavollAsset::free_balance(0, &2), 19);
+            assert_eq!(IdavollAsset::free_balance(0, &3), 31);
+            assert_eq!(IdavollAsset::total_issuances(0), 100);
+        });
+    }
+
+    #[test]
+    fn burn_and_mint_should_work() {
+        new_test_ext().execute_with(|| {
+            assert_eq!(IdavollAsset::create_token(1, 100),0);
+            assert_eq!(IdavollAsset::free_balance(0, &1), 100);
+            assert_eq!(IdavollAsset::total_balance(0, &1), 100);
+            assert_ok!(IdavollAsset::transfer(Origin::signed(1), 0, 2, 50));
+            assert_ok!(IdavollAsset::base_mint(0, &1,100));
+            assert_eq!(IdavollAsset::total_issuances(0), 200);
+            assert_eq!(IdavollAsset::base_mint(0,&2,100), Err(Error::<Test>::NoPermission.into()));
+            assert_ok!(IdavollAsset::base_burn(0, &1,20));
+            assert_eq!(IdavollAsset::total_issuances(0), 180);
+        });
+    }
+
     // #[test]
-    // fn querying_total_supply_should_work() {
-    //     new_test_ext().execute_with(|| {
-    //         assert_ok!(IdavollAsset::issue(Origin::signed(1), 100));
-    //         assert_eq!(IdavollAsset::balance(0, 1), 100);
-    //         assert_ok!(IdavollAsset::transfer(Origin::signed(1), 0, 2, 50));
-    //         assert_eq!(IdavollAsset::balance(0, 1), 50);
-    //         assert_eq!(IdavollAsset::balance(0, 2), 50);
-    //         assert_ok!(IdavollAsset::transfer(Origin::signed(2), 0, 3, 31));
-    //         assert_eq!(IdavollAsset::balance(0, 1), 50);
-    //         assert_eq!(IdavollAsset::balance(0, 2), 19);
-    //         assert_eq!(IdavollAsset::balance(0, 3), 31);
-    //         assert_ok!(IdavollAsset::destroy(Origin::signed(3), 0));
-    //         assert_eq!(IdavollAsset::total_supply(0), 69);
-    //     });
-    // }
-    //
-    // #[test]
-    // fn transferring_amount_above_available_balance_should_work() {
-    //     new_test_ext().execute_with(|| {
-    //         assert_ok!(IdavollAsset::issue(Origin::signed(1), 100));
-    //         assert_eq!(IdavollAsset::balance(0, 1), 100);
-    //         assert_ok!(IdavollAsset::transfer(Origin::signed(1), 0, 2, 50));
-    //         assert_eq!(IdavollAsset::balance(0, 1), 50);
-    //         assert_eq!(IdavollAsset::balance(0, 2), 50);
-    //     });
-    // }
-    //
-    // #[test]
-    // fn transferring_amount_more_than_available_balance_should_not_work() {
+    // fn lock_and_unlock_should_not_work() {
     //     new_test_ext().execute_with(|| {
     //         assert_ok!(IdavollAsset::issue(Origin::signed(1), 100));
     //         assert_eq!(IdavollAsset::balance(0, 1), 100);
