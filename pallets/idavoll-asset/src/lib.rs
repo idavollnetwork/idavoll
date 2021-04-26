@@ -342,6 +342,7 @@ mod test {
     const A: u64 = 100;
     const B: u64 = 200;
     const ORGID: u64 = 1000;
+    const ORGID2: u64 = 2000;
 
     #[derive(Clone, Eq, PartialEq)]
     pub struct Test;
@@ -498,6 +499,22 @@ mod test {
             assert_eq!(IdvBalances::free_balance(A),70);
             assert_noop!(IdavollAsset::transfer_to_Vault(ORGID, 1, 50), Error::<Test>::BalanceLow);
             assert_noop!(IdavollAsset::transfer_to_Vault(ORGID, A, 100), Error::<Test>::BalanceLow);
+            assert_ok!(IdavollAsset::transfer_to_Vault(ORGID2, B,60));
+            assert_eq!(IdavollAsset::Vault_balance_of(ORGID2),Ok(60));
+            assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),90);
+            assert_eq!(IdvBalances::free_balance(B),140);
+            // spend the Vault
+            assert_noop!(IdavollAsset::spend_organization_Vault(ORGID, 1,60),Error::<Test>::BalanceLow);
+            assert_noop!(IdavollAsset::spend_organization_Vault(2, 1,60),Error::<Test>::UnknownOwnerID);
+            assert_ok!(IdavollAsset::spend_organization_Vault(ORGID, 1,10));
+            assert_eq!(IdavollAsset::Vault_balance_of(ORGID),Ok(20));
+            assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),80);
+            assert_eq!(IdvBalances::free_balance(1),10);
+
+            assert_ok!(IdavollAsset::spend_organization_Vault(ORGID2, 2,30));
+            assert_eq!(IdavollAsset::Vault_balance_of(ORGID2),Ok(30));
+            assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),50);
+            assert_eq!(IdvBalances::free_balance(2),30);
         });
     }
 }
