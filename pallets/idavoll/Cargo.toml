@@ -29,7 +29,7 @@ idavoll-asset = { default-features = false, path = '../idavoll-asset' }
 [dev-dependencies]
 sp-core = { default-features = false, version = '2.0.0' }
 sp-io = { default-features = false, version = '2.0.0' }
-
+pallet-balances = { default-features = false, version = '2.0.0' }
 
 [features]
 default = ['std']
@@ -38,4 +38,5 @@ std = [
     'serde',
     'frame-support/std',
     'frame-system/std',
+    'pallet-balances/std',
 ]
