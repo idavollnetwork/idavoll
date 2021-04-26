@@ -76,6 +76,14 @@ impl<Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned> OrgRulePar
             _phantom: marker::PhantomData,
         }
     }
+    pub fn new(a: u32,d: u32,s: u32) -> Self {
+        Self{
+            minAffirmative: a,
+            maxDissenting: d,
+            abstention: s,
+            _phantom: marker::PhantomData,
+        }
+    }
     pub fn is_pass(&self,yes_amount: Balance,no_amount: Balance,nu_amount: Balance,total: Balance) -> bool {
         if self.minAffirmative == 0 as u32 {
             // must be 100% approval
