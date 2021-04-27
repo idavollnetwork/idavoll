@@ -49,7 +49,7 @@ pub struct ProposalDetail<AccountId, Balance, BlockNumber>
     pub votes: BTreeMap<AccountId, (Balance, bool)>,
     /// the creator of the proposal
     pub creator: AccountId,
-    /// the end datetime of the proposal,it set by created.
+    /// the end datetime(block number) of the proposal,it set by created.
     pub end_dt: BlockNumber,
     /// the user-default param for the vote rule in the proposal.
     /// it must be in range of the organization's param
@@ -92,7 +92,7 @@ impl<AccountId: Ord + Clone,
         return (yes_balance.clone(),no_balance.clone())
     }
     pub fn is_expire(&self,current: BlockNumber) -> bool {
-        return self.end_dt < current
+        return  current > self.end_dt
     }
     pub fn pass(&self,total_balance: Balance) -> bool {
         let (yes_balance,no_balance) = self.summary();

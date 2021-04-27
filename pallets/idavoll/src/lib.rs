@@ -215,9 +215,20 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T>  {
-	// be accountid of organization id for orginfos in the storage
+
+	/// be accountid of organization id for orginfos in the storage
 	pub fn counter2Orgid(c: OrgCount) -> T::AccountId {
 		T::ModuleId::get().into_sub_account(c)
+	}
+	/// get the count of the proposal in the storage
+	pub fn count_of_proposals() -> u32 {
+		let proposals = <Proposals<T>>::iter().map(|(v, _)| v).collect::<Vec<_>>();
+		proposals.len() as u32
+	}
+	/// get the count of the proposal in the storage
+	pub fn count_of_organizations() -> u32 {
+		let orgs = <OrgInfos<T>>::iter().map(|(v, _)| v).collect::<Vec<_>>();
+		orgs.len() as u32
 	}
 	pub fn get_orginfo_by_id(oid: T::AccountId) -> Result<OrgInfoOf<T>, dispatch::DispatchError> {
 		if OrgInfos::<T>::contains_key(oid.clone()) {
@@ -312,7 +323,7 @@ mod test {
 
 	use frame_support::{impl_outer_origin,impl_outer_dispatch, assert_ok, assert_noop, parameter_types, weights::Weight};
 	use sp_core::H256;
-	use sp_runtime::{Perbill, traits::{BlakeTwo256, IdentityLookup}, testing::Header,ModuleId};
+	use sp_runtime::{Perbill, traits::{BlakeTwo256, IdentityLookup,Hash}, testing::Header,ModuleId};
 	use pallet_balances;
 	use organization::{OrgInfo, Proposal,ProposalDetailOf};
 	use rules::{OrgRuleParam};
@@ -419,8 +430,12 @@ mod test {
 		genesis.assimilate_storage(&mut t).unwrap();
 		t.into()
 	}
-	fn set_block_number(n: <Test as frame_system::Trait>::BlockNumber) {
-		System::set_block_number(n)
+	fn set_block_number(n: <Test as frame_system::Trait>::BlockNumber) -> <Test as frame_system::Trait>::BlockNumber {
+		System::set_block_number(n);
+		n
+	}
+	fn get_block_number() -> <Test as frame_system::Trait>::BlockNumber {
+		System::block_number()
 	}
 	fn make_transfer_proposal(value: u64) -> Vec<u8> {
 		Call::IdvBalances(pallet_balances::Call::transfer(42, value)).encode()
@@ -473,6 +488,12 @@ mod test {
 			assert_eq!(IdavollModule::is_member(IdavollModule::counter2Orgid(0),&OWNER),true);
 			assert_eq!(IdavollModule::is_member(IdavollModule::counter2Orgid(0),&1),true);
 			assert_eq!(IdavollModule::is_member(IdavollModule::counter2Orgid(0),&9),false);
+
+			for i in 0..100 {
+				let org = create_org();
+				assert_ok!(IdavollModule::storage_new_organization(org.clone()));
+			}
+			assert_eq!(IdavollModule::count_of_organizations(),100+1);
 		});
 	}
 
@@ -510,30 +531,50 @@ mod test {
 			let proposal_id = IdavollModule::make_proposal_id(&proposal.clone());
 			print!("{}",proposal_id);
 			assert_eq!(IdavollModule::get_proposal_by_id(proposal_id),Ok(proposal.clone()));
-
+			let pid2 = <Test as frame_system::Trait>::Hashing::hash_of(&0);
+			assert_noop!(IdavollModule::get_proposal_by_id(pid2),Error::<Test>::ProposalNotFound);
+			// remove proposal
+			IdavollModule::remove_proposal_by_id(proposal_id);
+			assert_noop!(IdavollModule::get_proposal_by_id(proposal_id),Error::<Test>::ProposalNotFound);
 		});
 	}
 
 	#[test]
 	fn base_proposal_02_should_work() {
 
-		// new_test_ext().execute_with(|| {
-		// 	let mut org = create_org();
-		// 	let asset_id = IdavollModule::create_new_token(OWNER.clone(),100);
-		// 	assert_eq!(asset_id,0);
-		// 	org.set_asset_id(asset_id.clone());
-		// 	let org_id = IdavollModule::counter2Orgid(0);
-		// 	assert_ok!(IdavollModule::storage_new_organization(org.clone()));
-		// 	assert_eq!(IdavollModule::get_orginfo_by_id(org_id),Ok(org.clone()));
-		// 	assert_eq!(IdavollModule::get_count_members(org_id),4);
-		// 	// add member for the organization
-		//
-		// 	assert_noop!(IdavollModule::on_add_member(1,2,0),Error::<Test>::MemberDuplicate);
-		// 	assert_ok!(IdavollModule::on_add_member(1,22,0));
-		// 	assert_eq!(IdavollModule::get_count_members(org_id),5);
-		// 	assert_ok!(IdavollModule::on_add_member(OWNER,23,0));
-		// 	assert_eq!(IdavollModule::get_count_members(org_id),6);
-		// });
+		new_test_ext().execute_with(|| {
+			set_block_number(0);
+			for i in 0..10 {
+				let org_id = IdavollModule::counter2Orgid(i);
+				let proposal = create_proposal(org_id,i as u64 * 100,OWNER);
+				assert_ok!(IdavollModule::base_create_proposal(org_id,proposal.clone()));
+				let proposal_id = IdavollModule::make_proposal_id(&proposal.clone());
+				assert_eq!(IdavollModule::get_proposal_by_id(proposal_id),Ok(proposal.clone()));
+				assert_eq!(proposal.detail.creator(),OWNER.clone());
+				assert_eq!(set_block_number(i as u64),get_block_number());
+				if get_block_number() > 5 {
+					assert_eq!(proposal.detail.is_expire(get_block_number()),true);
+				} else {
+					assert_eq!(proposal.detail.is_expire(get_block_number()),false);
+				}
+			}
+			assert_eq!(IdavollModule::count_of_proposals(),10);
+		});
+	}
+
+	#[test]
+	fn base_proposal_03_should_work() {
+		new_test_ext().execute_with(||{
+			// vote in the single proposal test(the proposal was a fake proposal)
+			// let asset_id = IdavollModule::create_new_token(100,100);
+			// let mut proposal1 = create_proposal(100,10,OWNER);
+			// for i in 0..10 {
+			// 	proposal1.detail.vote(i,3,true);
+			// }
+			// for i in 10..15 {
+			// 	proposal1.detail.vote(i,5,false);
+			// }
+		});
 	}
 
 	#[test]
