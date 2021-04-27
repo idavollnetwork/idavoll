@@ -175,6 +175,9 @@ impl<
         }
         Ok(())
     }
+    pub fn counts(&self) -> u32 {
+        self.members.len() as u32
+    }
 }
 
 
@@ -232,7 +235,14 @@ impl<T: Trait> Module<T>  {
             Err(e) => false,
         }
     }
-
+    pub fn get_count_members(oid: T::AccountId) -> u32 {
+        match Self::get_orginfo_by_id(oid.clone()) {
+            Ok(org) => {
+                org.counts()
+            },
+            Err(e) => 0,
+        }
+    }
 
     pub fn reserve_to_Vault(id: u32,who: T::AccountId,value: T::Balance) -> DispatchResult {
         let oid = Self::counter2Orgid(id);
@@ -261,7 +271,7 @@ impl<T: Trait> Module<T>  {
     pub fn on_add_member(owner: T::AccountId,who: T::AccountId,id: u32) -> dispatch::DispatchResult {
         let oid = Self::counter2Orgid(id);
         let org = Self::get_orginfo_by_id(oid.clone())?;
-        ensure!(Self::is_member(oid.clone(),&owner),Error::<T>::NotOwnerByOrg);
+        ensure!(!Self::is_member(oid.clone(),&who),Error::<T>::MemberDuplicate);
         Self::base_add_member_on_orgid(oid.clone(),who.clone())
     }
 
