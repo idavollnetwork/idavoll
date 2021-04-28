@@ -574,24 +574,24 @@ mod test {
 
 			// vote on decision 1
 			for i in 0..10 {
-				proposal.detail.vote(i,3,true);
+				proposal.detail.vote(i,7,true);
 			}
 			for i in 10..15 {
 				proposal.detail.vote(i,5,false);
 			}
-			assert_eq!(proposal.detail.summary(),(30,25));
+			assert_eq!(proposal.detail.summary(),(70,25));
 			assert_eq!(proposal.detail.pass(100),false);
 
 			// vote on decision 2
 			proposal.detail.votes = BTreeMap::new();
 			for i in 0..10 {
-				proposal.detail.vote(i,6,true);
+				proposal.detail.vote(i,7,true);
 			}
-			for i in 10..15 {
-				proposal.detail.vote(i,5,false);
+			for i in 10..13 {
+				proposal.detail.vote(i,1,false);
 			}
-			assert_eq!(proposal.detail.summary(),(60,25));
-			assert_eq!(proposal.detail.pass(100),false);
+			assert_eq!(proposal.detail.summary(),(70,3));
+			assert_eq!(proposal.detail.pass(100),true);
 
 			// vote on decision 3
 			proposal.detail.votes = BTreeMap::new();
@@ -607,13 +607,13 @@ mod test {
 			// vote on decision 4
 			proposal.detail.votes = BTreeMap::new();
 			for i in 0..10 {
-				proposal.detail.vote(i,7,true);
+				proposal.detail.vote(i,6,true);
 			}
 			for i in 10..12 {
 				proposal.detail.vote(i,1,false);
 			}
-			assert_eq!(proposal.detail.summary(),(70,2));
-			assert_eq!(proposal.detail.pass(100),true);
+			assert_eq!(proposal.detail.summary(),(60,2));
+			assert_eq!(proposal.detail.pass(100),false);
 
 			// vote on decision 5
 			proposal.detail.votes = BTreeMap::new();
@@ -625,13 +625,59 @@ mod test {
 			}
 			assert_eq!(proposal.detail.summary(),(70,6));
 			assert_eq!(proposal.detail.pass(100),false);
+
+			// vote on decision 6
+			proposal.detail.votes = BTreeMap::new();
+			for i in 0..10 {
+				proposal.detail.vote(i,6,true);
+			}
+			for i in 10..15 {
+				proposal.detail.vote(i,1,false);
+			}
+			assert_eq!(proposal.detail.summary(),(60,5));
+			assert_eq!(proposal.detail.pass(100),false);
 		});
 	}
 
 	#[test]
-	fn base_rule_param_01_should_work() {
+	fn base_rule_param_should_work() {
 		new_test_ext().execute_with(|| {
-			
+			let mut param = OrgRuleParam::default();
+			// passed by 'minAffirmative' ,'maxDissenting' and 'abstention'
+			param.minAffirmative = 70;param.maxDissenting = 0;param.abstention = 0;
+			assert_eq!(param.is_pass(69 as u64,0,0,100),false);
+			assert_eq!(param.is_pass(70 as u64,0,0,100),false);
+			assert_eq!(param.is_pass(71 as u64,0,0,100),true);
+			assert_eq!(param.is_pass(69 as u64,10,10,100),false);
+			assert_eq!(param.is_pass(70 as u64,10,10,100),false);
+			assert_eq!(param.is_pass(71 as u64,10,10,100),true);
+
+			param.minAffirmative = 70;param.maxDissenting = 10;param.abstention = 0;
+			assert_eq!(param.is_pass(69 as u64,10,1,100),false);
+			assert_eq!(param.is_pass(70 as u64,10,1,100),false);
+			assert_eq!(param.is_pass(71 as u64,10,1,100),true);
+			assert_eq!(param.is_pass(69 as u64,9,1,100),false);
+			assert_eq!(param.is_pass(70 as u64,10,1,100),false);
+			assert_eq!(param.is_pass(71 as u64,11,1,100),false);
+			assert_eq!(param.is_pass(71 as u64,9,1,100),true);
+			assert_eq!(param.is_pass(71 as u64,10,1,100),true);
+			assert_eq!(param.is_pass(71 as u64,9,10,100),true);
+			assert_eq!(param.is_pass(71 as u64,10,10,100),true);
+
+			param.minAffirmative = 70;param.maxDissenting = 10;param.abstention = 3;
+			assert_eq!(param.is_pass(69 as u64,10,2,100),false);
+			assert_eq!(param.is_pass(70 as u64,10,3,100),false);
+			assert_eq!(param.is_pass(71 as u64,10,4,100),false);
+			assert_eq!(param.is_pass(71 as u64,9,2,100),true);
+			assert_eq!(param.is_pass(71 as u64,9,3,100),true);
+			assert_eq!(param.is_pass(71 as u64,9,4,100),false);
+		});
+	}
+
+	#[test]
+	fn base_dispatch_01_should_work() {
+		new_test_ext().execute_with(|| {
+
 		});
 	}
 }
