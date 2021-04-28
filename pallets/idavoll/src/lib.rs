@@ -327,6 +327,7 @@ mod test {
 	use pallet_balances;
 	use organization::{OrgInfo, Proposal,ProposalDetailOf};
 	use rules::{OrgRuleParam};
+	use sp_std::{prelude::Vec, boxed::Box,collections::btree_map::BTreeMap};
 
 
 	impl_outer_origin! {
@@ -566,19 +567,71 @@ mod test {
 	fn base_proposal_03_should_work() {
 		new_test_ext().execute_with(||{
 			// vote in the single proposal test(the proposal was a fake proposal)
-			// let asset_id = IdavollModule::create_new_token(100,100);
-			// let mut proposal1 = create_proposal(100,10,OWNER);
-			// for i in 0..10 {
-			// 	proposal1.detail.vote(i,3,true);
-			// }
-			// for i in 10..15 {
-			// 	proposal1.detail.vote(i,5,false);
-			// }
+			let asset_id = IdavollModule::create_new_token(100,100);
+			let mut proposal = create_proposal(100,10,OWNER);
+
+			// passed by more than 60% 'Yes' votes and less than 5% 'no' votes
+
+			// vote on decision 1
+			for i in 0..10 {
+				proposal.detail.vote(i,3,true);
+			}
+			for i in 10..15 {
+				proposal.detail.vote(i,5,false);
+			}
+			assert_eq!(proposal.detail.summary(),(30,25));
+			assert_eq!(proposal.detail.pass(100),false);
+
+			// vote on decision 2
+			proposal.detail.votes = BTreeMap::new();
+			for i in 0..10 {
+				proposal.detail.vote(i,6,true);
+			}
+			for i in 10..15 {
+				proposal.detail.vote(i,5,false);
+			}
+			assert_eq!(proposal.detail.summary(),(60,25));
+			assert_eq!(proposal.detail.pass(100),false);
+
+			// vote on decision 3
+			proposal.detail.votes = BTreeMap::new();
+			for i in 0..10 {
+				proposal.detail.vote(i,8,true);
+			}
+			for i in 10..15 {
+				proposal.detail.vote(i,1,false);
+			}
+			assert_eq!(proposal.detail.summary(),(80,5));
+			assert_eq!(proposal.detail.pass(100),true);
+
+			// vote on decision 4
+			proposal.detail.votes = BTreeMap::new();
+			for i in 0..10 {
+				proposal.detail.vote(i,7,true);
+			}
+			for i in 10..12 {
+				proposal.detail.vote(i,1,false);
+			}
+			assert_eq!(proposal.detail.summary(),(70,2));
+			assert_eq!(proposal.detail.pass(100),true);
+
+			// vote on decision 5
+			proposal.detail.votes = BTreeMap::new();
+			for i in 0..10 {
+				proposal.detail.vote(i,7,true);
+			}
+			for i in 10..16 {
+				proposal.detail.vote(i,1,false);
+			}
+			assert_eq!(proposal.detail.summary(),(70,6));
+			assert_eq!(proposal.detail.pass(100),false);
 		});
 	}
 
 	#[test]
 	fn base_rule_param_01_should_work() {
-
+		new_test_ext().execute_with(|| {
+			
+		});
 	}
 }
