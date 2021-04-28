@@ -80,7 +80,7 @@ impl<AccountId: Ord + Clone,
         }
         Ok(())
     }
-    fn summary(&self) -> (Balance,Balance) {
+    pub fn summary(&self) -> (Balance,Balance) {
         let (mut yes_balance,mut no_balance) = (Balance::default(),Balance::default());
         self.votes.iter().for_each(|val|{
             if val.1.1 {
