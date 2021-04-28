@@ -51,6 +51,10 @@ pub trait BaseRule {
     fn on_can_close(creator: Self::AccountId,detail: Self::Params) -> DispatchResult;
 }
 
+/// OrgRuleParam was used to vote by decision, it passed by all 'TRUE',
+/// passed by more than 60% 'Yes' votes and less than 5% 'no' votes.
+/// 'pass' = 'yes > minAffirmative%' and 'no <= maxDissenting' and 'nul <= abstention'
+///
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct OrgRuleParam<Balance>
@@ -85,18 +89,11 @@ impl<Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned> OrgRulePar
         }
     }
     pub fn is_pass(&self,yes_amount: Balance,no_amount: Balance,nu_amount: Balance,total: Balance) -> bool {
-        if self.minAffirmative == 0 as u32 {
-            // must be 100% approval
-            return yes_amount >= total
-        } else {
-            if self.maxDissenting != 0 as u32 {
-                return !(no_amount > Perbill::from_percent(self.maxDissenting) * total)
-            }
-            if self.abstention != 0 as u32 {
-                return !(nu_amount > Perbill::from_percent(self.abstention) * total)
-            }
-            return yes_amount > Perbill::from_percent(self.minAffirmative) * total
-        }
+
+        (self.minAffirmative == 0 || yes_amount > Perbill::from_percent(self.minAffirmative) * total.clone()) &&
+            (self.maxDissenting == 0 || !(no_amount > Perbill::from_percent(self.maxDissenting) * total.clone())) &&
+            (self.abstention == 0 || !(nu_amount > Perbill::from_percent(self.abstention) * total.clone()))
+
     }
     pub fn inherit_valid(&self,subparam: OrgRuleParam<Balance>) -> bool {
         return subparam.minAffirmative >= self.minAffirmative
