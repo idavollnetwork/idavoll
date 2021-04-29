@@ -32,6 +32,7 @@ use codec::{Decode, Encode};
 use sp_runtime::{RuntimeDebug, traits::{Hash as FrameHash,Saturating,AtLeast32BitUnsigned,Member, Zero}, DispatchResult};
 use sp_std::{cmp::PartialOrd,prelude::Vec, boxed::Box,collections::btree_map::BTreeMap, marker};
 use idavoll_asset::{token::BaseToken,finance::BaseFinance};
+use frame_support::sp_runtime::DispatchError;
 
 // pub type OrganizationId = u64;
 
@@ -223,18 +224,6 @@ impl<T: Trait> Module<T>  {
     pub fn make_proposal_id(proposal: &ProposalOf<T>) -> ProposalIdOf<T> {
         T::Hashing::hash_of(&[proposal.encode()])
     }
-    fn get_total_token_by_oid(oid: T::AccountId) -> Result<T::Balance,dispatch::DispatchResult> {
-        let org = Self::get_orginfo_by_id(oid)?;
-
-        Ok(T::AssetHandle::total(org.get_asset_id()))
-    }
-    pub fn is_pass(proposal: ProposalOf<T>) -> bool {
-        let total_balance = Self::get_total_token_by_oid(proposal.org);
-        match total_balance {
-            Ok(balance) => proposal.detail.pass(balance),
-            Err(e) => false,
-        }
-    }
     pub fn get_count_members(oid: T::AccountId) -> u32 {
         match Self::get_orginfo_by_id(oid.clone()) {
             Ok(org) => {
@@ -244,13 +233,35 @@ impl<T: Trait> Module<T>  {
         }
     }
 
-    pub fn reserve_to_Vault(id: u32,who: T::AccountId,value: T::Balance) -> DispatchResult {
-        let oid = Self::counter2Orgid(id);
-        let org = Self::get_orginfo_by_id(oid.clone())?;
+    pub fn get_total_token_by_oid(oid: T::AccountId) -> Result<T::Balance,DispatchResult> {
+        let org = Self::get_orginfo_by_id(oid)?;
+
+        Ok(T::AssetHandle::total(org.get_asset_id()))
+    }
+    pub fn get_local_balance(id: T::AccountId) -> Result<T::Balance,DispatchError> {
+        T::Finance::balance_of(id.clone())
+    }
+
+    pub fn is_pass(proposal: ProposalOf<T>) -> bool {
+        let total_balance = Self::get_total_token_by_oid(proposal.org);
+        match total_balance {
+            Ok(balance) => proposal.detail.pass(balance),
+            Err(e) => false,
+        }
+    }
+
+    pub fn reserve_to_Vault(oid: T::AccountId,who: T::AccountId,value: T::Balance) -> DispatchResult {
         T::Finance::reserve_to_org(oid.clone(),who.clone(),value)
     }
+    pub fn on_reserve_to_Vault(id: u32,who: T::AccountId,value: T::Balance) -> DispatchResult {
+        let oid = Self::counter2Orgid(id);
+        // make sure the oid was exist
+        Self::get_orginfo_by_id(oid.clone())?;
+        Self::reserve_to_Vault(oid,who.clone(),value)
+    }
+
     pub fn on_create_proposal(id:u32,who: T::AccountId,expire: T::BlockNumber,sub_param: OrgRuleParamOf<T>
-                              ,call: Box<<T as Trait>::Call>) ->dispatch::DispatchResult {
+                              ,call: Box<<T as Trait>::Call>) ->DispatchResult {
         let oid = Self::counter2Orgid(id);
         let org = Self::get_orginfo_by_id(oid.clone())?;
         if !org.param.inherit_valid(sub_param.clone()) {
@@ -264,7 +275,7 @@ impl<T: Trait> Module<T>  {
         };
         Self::base_create_proposal(oid.clone(),proposal)
     }
-    pub fn on_vote_proposal(pid: ProposalIdOf<T>,who: T::AccountId,value: T::Balance,yesorno: bool,cur: T::BlockNumber) -> dispatch::DispatchResult {
+    pub fn on_vote_proposal(pid: ProposalIdOf<T>,who: T::AccountId,value: T::Balance,yesorno: bool,cur: T::BlockNumber) -> DispatchResult {
         let proposal = Self::get_proposal_by_id(pid)?;
         Self::vote_on_proposal(proposal.org,pid,who.clone(),value,yesorno,cur)
     }
