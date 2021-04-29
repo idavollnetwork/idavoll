@@ -359,7 +359,7 @@ mod test {
 	const A: u128 = 100;
 	const B: u128 = 200;
 	const OWNER: u128 = 88;
-	const RECEIVER: u128 = 99;
+	const RECEIVER: u128 = 7;
 	const ORGID: u128 = 1000;
 	const ORGID2: u128 = 2000;
 
@@ -438,8 +438,8 @@ mod test {
 		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 		let genesis = pallet_balances::GenesisConfig::<Test> {
 			balances: vec![
-				(A, 100),
-				(B, 200),
+				(A, 100000),
+				(B, 200000),
 			],
 		};
 		genesis.assimilate_storage(&mut t).unwrap();
@@ -480,6 +480,14 @@ mod test {
 		let sub_param = OrgRuleParam::new(60,5,0);
 		Proposal {
 			org:    ORGID.clone(),
+			call: 	call.clone(),
+			detail: ProposalDetail::new(OWNER.clone(),5,sub_param.clone()),
+		}
+	}
+	fn create_proposal3(id: u128,call: Vec<u8>) -> ProposalOf<Test> {
+		let sub_param = OrgRuleParam::new(60,5,0);
+		Proposal {
+			org:    id.clone(),
 			call: 	call.clone(),
 			detail: ProposalDetail::new(OWNER.clone(),5,sub_param.clone()),
 		}
@@ -738,8 +746,48 @@ mod test {
 			assert_noop!(IdavollModule::get_local_balance(RECEIVER),IdavollAssetError::UnknownOwnerID);
 			assert_eq!(IdvBalances::free_balance(ORGID.clone()),0);
 
+		});
+	}
+
+	#[test]
+	fn base_dispatch_02_should_work() {
+		new_test_ext().execute_with(|| {
+			let proposal = create_proposal2(make_transfer_proposal(10));
+			assert_ok!(IdavollModule::base_create_proposal(ORGID.clone(),proposal.clone()));
+			assert_ok!(IdavollModule::reserve_to_Vault(ORGID.clone(),A.clone(),30));
+			assert_eq!(IdavollModule::get_local_balance(ORGID.clone()),Ok(30));
+			assert_eq!(IdvBalances::free_balance(ORGID.clone()),0);
 
 
+			// transfer the asset from organization id(it is success)
+			let proposal_id = IdavollModule::make_proposal_id(&proposal.clone());
+			assert_ok!(IdavollModule::base_call_dispatch(proposal_id,proposal.clone()));
+			assert_eq!(IdavollModule::get_local_balance(ORGID.clone()),Ok(20));
+			assert_eq!(IdvBalances::free_balance(RECEIVER.clone()),10);
+			// it's not store the members's balance only organization's balance in the idv-asset
+			// on the local asset(idv)
+			assert_noop!(IdavollModule::get_local_balance(RECEIVER),IdavollAssetError::UnknownOwnerID);
+
+		});
+	}
+
+	#[test]
+	fn base_dispatch_03_should_work() {
+		new_test_ext().execute_with(|| {
+			let mut sum = 0;
+			for i in 10..100 {
+				let proposal = create_proposal3(i as u128,make_transfer_proposal(i));
+				assert_ok!(IdavollModule::base_create_proposal(i as u128,proposal.clone()));
+				assert_ok!(IdavollModule::reserve_to_Vault(i as u128,A.clone(),i));
+				assert_eq!(IdavollModule::get_local_balance(i as u128),Ok(i));
+
+				sum += i;
+				// transfer the asset from organization id(it is success)
+				let proposal_id = IdavollModule::make_proposal_id(&proposal.clone());
+				assert_ok!(IdavollModule::base_call_dispatch(proposal_id,proposal.clone()));
+				assert_eq!(IdvBalances::free_balance(RECEIVER.clone()),sum);
+				assert_noop!(IdavollModule::get_local_balance(RECEIVER),IdavollAssetError::UnknownOwnerID);
+			}
 		});
 	}
 }
