@@ -185,7 +185,7 @@ decl_module! {
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
 		pub fn deposit_to_origanization(origin,id: u32,value: T::Balance) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
-			Self::reserve_to_Vault(id,who,value)
+			Self::on_reserve_to_Vault(id,who,value)
 		}
 
 		/// voting on the proposal by the members in the organization
@@ -343,10 +343,12 @@ mod test {
 	type System = frame_system::Module<Test>;
 	type IdvBalances = pallet_balances::Module<Test>;
 	type IdavollAsset = idavoll_asset::Module<Test>;
+	type IdavollAssetError = idavoll_asset::Error<Test>;
 
 	const A: u128 = 100;
 	const B: u128 = 200;
 	const OWNER: u128 = 88;
+	const RECEIVER: u128 = 99;
 	const ORGID: u128 = 1000;
 	const ORGID2: u128 = 2000;
 
@@ -439,7 +441,7 @@ mod test {
 		System::block_number()
 	}
 	fn make_transfer_proposal(value: u64) -> Vec<u8> {
-		Call::IdvBalances(pallet_balances::Call::transfer(42, value)).encode()
+		Call::IdvBalances(pallet_balances::Call::transfer(RECEIVER, value)).encode()
 	}
 	fn make_system_proposal(value: u64) -> Vec<u8> {
 		Call::System(frame_system::Call::remark(vec![0; 1])).encode()
@@ -457,6 +459,14 @@ mod test {
 			org:    oid.clone(),
 			call: 	make_transfer_proposal(value),
 			detail: ProposalDetail::new(owner.clone(),5,sub_param.clone()),
+		}
+	}
+	fn create_proposal2(call: Vec<u8>) -> ProposalOf<Test> {
+		let sub_param = OrgRuleParam::new(60,5,0);
+		Proposal {
+			org:    ORGID.clone(),
+			call: 	call.clone(),
+			detail: ProposalDetail::new(OWNER.clone(),5,sub_param.clone()),
 		}
 	}
 
@@ -671,13 +681,43 @@ mod test {
 			assert_eq!(param.is_pass(71 as u64,9,2,100),true);
 			assert_eq!(param.is_pass(71 as u64,9,3,100),true);
 			assert_eq!(param.is_pass(71 as u64,9,4,100),false);
+
+			// sub param
+			param.minAffirmative = 70;param.maxDissenting = 10;param.abstention = 3;
+			let mut sub = OrgRuleParam::default();
+			sub.minAffirmative = 70;sub.maxDissenting = 10;sub.abstention = 3;
+			assert_eq!(param.inherit_valid(sub.clone()),true);  // same of the param
+
+			sub.minAffirmative = 69;sub.maxDissenting = 10;sub.abstention = 3;
+			assert_eq!(param.inherit_valid(sub.clone()),false);
+			sub.minAffirmative = 71;sub.maxDissenting = 10;sub.abstention = 3;
+			assert_eq!(param.inherit_valid(sub.clone()),true);
+
+			sub.minAffirmative = 70;sub.maxDissenting = 9;sub.abstention = 3;
+			assert_eq!(param.inherit_valid(sub.clone()),true);
+			sub.minAffirmative = 70;sub.maxDissenting = 11;sub.abstention = 3;
+			assert_eq!(param.inherit_valid(sub.clone()),false);
+
+			sub.minAffirmative = 70;sub.maxDissenting = 10;sub.abstention = 2;
+			assert_eq!(param.inherit_valid(sub.clone()),true);
+			sub.minAffirmative = 70;sub.maxDissenting = 10;sub.abstention = 4;
+			assert_eq!(param.inherit_valid(sub.clone()),false);
 		});
 	}
 
 	#[test]
 	fn base_dispatch_01_should_work() {
 		new_test_ext().execute_with(|| {
+			let proposal = create_proposal2(make_transfer_proposal(10));
+			assert_noop!(IdavollModule::get_local_balance(ORGID),IdavollAssetError::UnknownOwnerID);
+			assert_ok!(IdavollModule::base_create_proposal(ORGID.clone(),proposal.clone()));
+			assert_ok!(IdavollModule::reserve_to_Vault(ORGID.clone(),A.clone(),30));
+			assert_eq!(IdavollModule::get_local_balance(ORGID),Ok(30));
+			assert_noop!(IdavollModule::get_local_balance(RECEIVER),IdavollAssetError::UnknownOwnerID);
+			let proposal_id = IdavollModule::make_proposal_id(&proposal.clone());
 
+			assert_ok!(IdavollModule::base_call_dispatch(proposal_id,proposal.clone()));
+			assert_noop!(IdavollModule::get_local_balance(RECEIVER),IdavollAssetError::UnknownOwnerID);
 		});
 	}
 }
