@@ -85,4 +85,7 @@ impl<T: Trait> Module<T> {
         T::AssetHandle::create(owner,total)
     }
 
+    pub fn handle_transfer_by_decision(oid: T::AccountId,to: T::AccountId,value: T::Balance) -> DispatchResult {
+        T::Finance::transfer_by_Vault(oid.clone(),to.clone(),value)
+    }
 }

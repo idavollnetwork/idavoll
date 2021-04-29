@@ -211,6 +211,16 @@ decl_module! {
 			let expire = cur.saturating_add(length);
 			Self::on_create_proposal(id,who,expire,sub_param,call)
 		}
+		/// dispatch
+		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		pub fn transfer(
+						origin,
+		        		dest: <T::Lookup as StaticLookup>::Source,
+						#[compact] value: T::Balance) -> dispatch::DispatchResult {
+			let send = ensure_signed(origin)?;
+			let dest = T::Lookup::lookup(dest)?;
+			Self::handle_transfer_by_decision(send,dest,value)
+		}
 	}
 }
 
@@ -337,6 +347,7 @@ mod test {
 		pub enum Call for Test where origin: Origin {
 			frame_system::System,
 			pallet_balances::IdvBalances,
+			Self::IdavollModule,
         }
     }
 
@@ -412,6 +423,7 @@ mod test {
 	}
 
 	type IdavollModule = Module<Test>;
+	type IdavallCall = super::Call<Test>;
 	impl Trait for Test {
 		type Event = ();
 		type Call = Call;
@@ -440,8 +452,11 @@ mod test {
 	fn get_block_number() -> <Test as frame_system::Trait>::BlockNumber {
 		System::block_number()
 	}
+	fn make_transfer_fail_proposal(value: u64) -> Vec<u8> {
+		Call::IdvBalances(pallet_balances::Call::transfer(RECEIVER.clone(), value)).encode()
+	}
 	fn make_transfer_proposal(value: u64) -> Vec<u8> {
-		Call::IdvBalances(pallet_balances::Call::transfer(RECEIVER, value)).encode()
+		Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value)).encode()
 	}
 	fn make_system_proposal(value: u64) -> Vec<u8> {
 		Call::System(frame_system::Call::remark(vec![0; 1])).encode()
@@ -457,7 +472,7 @@ mod test {
 		let sub_param = OrgRuleParam::new(60,5,0);
 		Proposal {
 			org:    oid.clone(),
-			call: 	make_transfer_proposal(value),
+			call: 	make_transfer_fail_proposal(value),
 			detail: ProposalDetail::new(owner.clone(),5,sub_param.clone()),
 		}
 	}
@@ -708,16 +723,23 @@ mod test {
 	#[test]
 	fn base_dispatch_01_should_work() {
 		new_test_ext().execute_with(|| {
-			let proposal = create_proposal2(make_transfer_proposal(10));
-			assert_noop!(IdavollModule::get_local_balance(ORGID),IdavollAssetError::UnknownOwnerID);
+			let proposal = create_proposal2(make_transfer_fail_proposal(10));
 			assert_ok!(IdavollModule::base_create_proposal(ORGID.clone(),proposal.clone()));
 			assert_ok!(IdavollModule::reserve_to_Vault(ORGID.clone(),A.clone(),30));
 			assert_eq!(IdavollModule::get_local_balance(ORGID),Ok(30));
-			assert_noop!(IdavollModule::get_local_balance(RECEIVER),IdavollAssetError::UnknownOwnerID);
-			let proposal_id = IdavollModule::make_proposal_id(&proposal.clone());
 
+			// because the real asset in the Vault of the Finance Module
+			assert_eq!(IdvBalances::free_balance(ORGID.clone()),0);
+			assert_noop!(IdavollModule::get_local_balance(RECEIVER),IdavollAssetError::UnknownOwnerID);
+
+			// transfer the asset from organization id(it is fail),cause it's not transfer by direct
+			let proposal_id = IdavollModule::make_proposal_id(&proposal.clone());
 			assert_ok!(IdavollModule::base_call_dispatch(proposal_id,proposal.clone()));
 			assert_noop!(IdavollModule::get_local_balance(RECEIVER),IdavollAssetError::UnknownOwnerID);
+			assert_eq!(IdvBalances::free_balance(ORGID.clone()),0);
+
+
+
 		});
 	}
 }
