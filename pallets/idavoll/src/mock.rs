@@ -17,7 +17,7 @@ impl_outer_origin! {
 impl_outer_dispatch! {
 		pub enum Call for Test where origin: Origin {
 			frame_system::System,
-			pallet_balances::IdvBalances,
+			// pallet_balances::IdvBalances,
 			idavoll::IdavollModule,
         }
     }
@@ -123,36 +123,35 @@ pub fn set_block_number(n: <Test as frame_system::Trait>::BlockNumber) -> <Test 
 pub fn get_block_number() -> <Test as frame_system::Trait>::BlockNumber {
 	System::block_number()
 }
-pub fn make_transfer_fail_proposal(value: u64) -> Vec<u8> {
-	Call::IdvBalances(pallet_balances::Call::transfer(RECEIVER.clone(), value)).encode()
-}
-pub fn make_transfer_proposal(value: u64) -> Vec<u8> {
-	Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value)).encode()
-}
-pub fn make_system_proposal(value: u64) -> Vec<u8> {
-	Call::System(frame_system::Call::remark(vec![0; 1])).encode()
+// pub fn call_to_vec(call: Box<<Self as Trait>::Call>) -> Vec<u8> {
+// 	call.encode()
+// }
+pub fn make_transfer_proposal(value: u64) -> Box<Call> {
+	Box::new(Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value)))
 }
 
 pub fn create_org(creator: u128) -> OrgInfoOf<Test> {
 	let mut org = OrgInfo::new();
-	org.members = vec![creator,1,2,3];
-	org.param = OrgRuleParam::new(60,5,0);
+	org.members = vec![];
+	org.param = get_rule();
 	org.clone()
 }
+pub fn get_rule() -> OrgRuleParam<u64> {
+	OrgRuleParam::new(60,5,0)
+}
 pub fn create_proposal(id: u128,call: Vec<u8>) -> ProposalOf<Test> {
-	let sub_param = OrgRuleParam::new(60,5,0);
 	Proposal {
 		org:    id.clone(),
 		call: 	call.clone(),
-		detail: ProposalDetail::new(OWNER.clone(),5,sub_param.clone()),
+		detail: ProposalDetail::new(OWNER.clone(),5,get_rule()),
 	}
 }
 
 pub fn create_new_organization(creator: u128,total: u64) -> u128 {
 	let info = create_org(creator);
+	let c = IdavollModule::counter_of();
 	match IdavollModule::create_origanization(RawOrigin::Signed(creator).into(),total,info) {
 		Ok(val) => {
-			let c = OrgCounter::get();
 			IdavollModule::counter2Orgid(c)
 		},
 		Err(e) => u128::MAX,

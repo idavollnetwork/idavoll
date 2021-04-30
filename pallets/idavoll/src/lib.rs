@@ -54,6 +54,7 @@ pub use organization::{OrgInfo, Proposal,ProposalDetail,ProposalDetailOf};
 use idavoll_asset::{token::BaseToken,finance::BaseFinance,LocalBalance,Trait as AssetTrait};
 use rules::{OrgRuleParam};
 
+
 pub trait WeightInfo {
 	fn create_origanization(b: u32) -> Weight;
 	fn create_proposal() -> Weight;
@@ -95,6 +96,7 @@ pub type OrgInfoOf<T> = OrgInfo<
 	<T as Trait>::AssetId,
 >;
 pub type ProposalIdOf<T> = <T as frame_system::Trait>::Hash;
+
 pub type ProposalOf<T> = Proposal<
 	Vec<u8>,
 	<T as frame_system::Trait>::AccountId,
@@ -212,6 +214,13 @@ decl_module! {
 			Self::on_add_member(owner,who,id)
 		}
 		/// create proposal in the organization for voting by members
+		///
+		/// id: Ordinal number created by the organization，it mapped whit the organization id.
+		/// length: the block number(length) as the proposal lift time, if the current block number
+		/// more than the 'length' than the proposal is expired.
+		/// sub_param: the vote rule, it was satisfied with the organization's rule,more details in
+		/// the 'RULE' Module
+		///
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
 		pub fn create_proposal(origin,id: u32,length: T::BlockNumber,sub_param: OrgRuleParamOf<T>,
 		call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {
