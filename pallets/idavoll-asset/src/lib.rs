@@ -290,7 +290,7 @@ impl<T: Trait> Module<T> {
     }
 
 
-    pub fn Vault_balance_of(oid: T::AccountId) -> Result<LocalBalance<T>, dispatch::DispatchError> {
+    pub fn vault_balance_of(oid: T::AccountId) -> Result<LocalBalance<T>, dispatch::DispatchError> {
         if Finances::<T>::contains_key(oid.clone()) {
             Ok(<Finances<T>>::get(oid.clone()))
         }else {
@@ -298,11 +298,11 @@ impl<T: Trait> Module<T> {
         }
     }
     /// transfer the balance to the organization's Vault from the members in the organization
-    pub fn transfer_to_Vault(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
+    pub fn transfer_to_vault(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
         let balance = T::Currency::free_balance(&who);
         ensure!(balance >= value,Error::<T>::BalanceLow);
-        let Vault_account = Self::account_id();
-        T::Currency::transfer(&who,&Vault_account,value,AllowDeath)?;
+        let vault_account = Self::account_id();
+        T::Currency::transfer(&who,&vault_account,value,AllowDeath)?;
 
         Finances::<T>::mutate(oid.clone(), |a| -> dispatch::DispatchResult {
             *a = a.saturating_add(value.clone());
@@ -310,11 +310,11 @@ impl<T: Trait> Module<T> {
         })
     }
     /// transfer the balance to `to` from finance's Vault by Call<> function
-    pub fn spend_organization_Vault(oid: T::AccountId,to: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
-        let Vault_balance = Self::Vault_balance_of(oid.clone())?;
-        ensure!(Vault_balance >= value,Error::<T>::BalanceLow);
-        let Vault_account = Self::account_id();
-        T::Currency::transfer(&Vault_account,&to,value,AllowDeath)?;
+    pub fn spend_organization_vault(oid: T::AccountId,to: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
+        let vault_balance = Self::vault_balance_of(oid.clone())?;
+        ensure!(vault_balance >= value,Error::<T>::BalanceLow);
+        let vault_account = Self::account_id();
+        T::Currency::transfer(&vault_account,&to,value,AllowDeath)?;
         Finances::<T>::try_mutate_exists(oid,|x|{
             let balance = x.as_mut().ok_or(Error::<T>::UnknownOwnerID)?;
             *x = Some(balance.saturating_sub(value));
@@ -492,27 +492,27 @@ mod test {
     #[test]
     fn Vault_transfer_and_balance_should_not_work() {
         new_test_ext().execute_with(|| {
-            assert_noop!(IdavollAsset::Vault_balance_of(ORGID),Error::<Test>::UnknownOwnerID);
-            assert_ok!(IdavollAsset::transfer_to_Vault(ORGID, A,30));
-            assert_eq!(IdavollAsset::Vault_balance_of(ORGID),Ok(30));
+            assert_noop!(IdavollAsset::vault_balance_of(ORGID),Error::<Test>::UnknownOwnerID);
+            assert_ok!(IdavollAsset::transfer_to_vault(ORGID, A,30));
+            assert_eq!(IdavollAsset::vault_balance_of(ORGID),Ok(30));
             assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),30);
             assert_eq!(IdvBalances::free_balance(A),70);
-            assert_noop!(IdavollAsset::transfer_to_Vault(ORGID, 1, 50), Error::<Test>::BalanceLow);
-            assert_noop!(IdavollAsset::transfer_to_Vault(ORGID, A, 100), Error::<Test>::BalanceLow);
-            assert_ok!(IdavollAsset::transfer_to_Vault(ORGID2, B,60));
-            assert_eq!(IdavollAsset::Vault_balance_of(ORGID2),Ok(60));
+            assert_noop!(IdavollAsset::transfer_to_vault(ORGID, 1, 50), Error::<Test>::BalanceLow);
+            assert_noop!(IdavollAsset::transfer_to_vault(ORGID, A, 100), Error::<Test>::BalanceLow);
+            assert_ok!(IdavollAsset::transfer_to_vault(ORGID2, B,60));
+            assert_eq!(IdavollAsset::vault_balance_of(ORGID2),Ok(60));
             assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),90);
             assert_eq!(IdvBalances::free_balance(B),140);
             // spend the Vault
-            assert_noop!(IdavollAsset::spend_organization_Vault(ORGID, 1,60),Error::<Test>::BalanceLow);
-            assert_noop!(IdavollAsset::spend_organization_Vault(2, 1,60),Error::<Test>::UnknownOwnerID);
-            assert_ok!(IdavollAsset::spend_organization_Vault(ORGID, 1,10));
-            assert_eq!(IdavollAsset::Vault_balance_of(ORGID),Ok(20));
+            assert_noop!(IdavollAsset::spend_organization_vault(ORGID, 1,60),Error::<Test>::BalanceLow);
+            assert_noop!(IdavollAsset::spend_organization_vault(2, 1,60),Error::<Test>::UnknownOwnerID);
+            assert_ok!(IdavollAsset::spend_organization_vault(ORGID, 1,10));
+            assert_eq!(IdavollAsset::vault_balance_of(ORGID),Ok(20));
             assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),80);
             assert_eq!(IdvBalances::free_balance(1),10);
 
-            assert_ok!(IdavollAsset::spend_organization_Vault(ORGID2, 2,30));
-            assert_eq!(IdavollAsset::Vault_balance_of(ORGID2),Ok(30));
+            assert_ok!(IdavollAsset::spend_organization_vault(ORGID2, 2,30));
+            assert_eq!(IdavollAsset::vault_balance_of(ORGID2),Ok(30));
             assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),50);
             assert_eq!(IdvBalances::free_balance(2),30);
         });

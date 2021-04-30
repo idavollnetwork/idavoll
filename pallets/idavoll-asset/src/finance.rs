@@ -39,6 +39,7 @@ pub type BountyIndex = u32;
 /// pallet's module named 'Finance',the Finance will only be access the local asset(IDV),
 /// Although the local asset belongs to the organization, the organization cannot transfer it,
 /// the Vault was transfer only by the Finance.
+///
 pub trait BaseFinance<AccountId,Balance> {
     /// get the balance(for local idv asset) by the id(organization id), the return was
     /// the balance(record in to the idv-asset pallet storage), the real asset is storage
@@ -48,7 +49,7 @@ pub trait BaseFinance<AccountId,Balance> {
     /// ModuleID of the the pallet, and record to the storage of the pallet with the organization id
     fn reserve_to_org(oid: AccountId,who: AccountId,value: Balance) -> DispatchResult;
     /// transfer the asset(idv) to the user account, and reduce the organization's amount
-    fn transfer_by_Vault(oid: AccountId,to: AccountId,value: Balance) -> DispatchResult;
+    fn transfer_by_vault(oid: AccountId,to: AccountId,value: Balance) -> DispatchResult;
 }
 
 impl<T: Trait> Module<T> {
@@ -70,12 +71,12 @@ impl<T: Trait> Module<T> {
 impl<T: Trait> BaseFinance<T::AccountId,LocalBalance<T>> for Module<T> {
 
     fn balance_of(oid: T::AccountId) -> Result<LocalBalance<T>,DispatchError> {
-        Self::Vault_balance_of(oid)
+        Self::vault_balance_of(oid)
     }
     fn reserve_to_org(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> DispatchResult {
-        Self::transfer_to_Vault(oid,who,value)
+        Self::transfer_to_vault(oid,who,value)
     }
-    fn transfer_by_Vault(oid: T::AccountId,to: T::AccountId,value: LocalBalance<T>) -> DispatchResult {
-        Self::spend_organization_Vault(oid,to,value)
+    fn transfer_by_vault(oid: T::AccountId,to: T::AccountId,value: LocalBalance<T>) -> DispatchResult {
+        Self::spend_organization_vault(oid,to,value)
     }
 }

@@ -250,14 +250,14 @@ impl<T: Trait> Module<T>  {
         }
     }
 
-    pub fn reserve_to_Vault(oid: T::AccountId,who: T::AccountId,value: T::Balance) -> DispatchResult {
+    pub fn reserve_to_vault(oid: T::AccountId,who: T::AccountId,value: T::Balance) -> DispatchResult {
         T::Finance::reserve_to_org(oid.clone(),who.clone(),value)
     }
-    pub fn on_reserve_to_Vault(id: u32,who: T::AccountId,value: T::Balance) -> DispatchResult {
+    pub fn on_reserve_to_vault(id: u32,who: T::AccountId,value: T::Balance) -> DispatchResult {
         let oid = Self::counter2Orgid(id);
         // make sure the oid was exist
         Self::get_orginfo_by_id(oid.clone())?;
-        Self::reserve_to_Vault(oid,who.clone(),value)
+        Self::reserve_to_vault(oid,who.clone(),value)
     }
 
     pub fn on_create_proposal(id:u32,who: T::AccountId,expire: T::BlockNumber,sub_param: OrgRuleParamOf<T>

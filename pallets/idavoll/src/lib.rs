@@ -170,7 +170,12 @@ decl_module! {
 		fn deposit_event() = default;
 
 		/// create organization with the assetID=0,this will create new token for voting proposal
-		/// and the token will assgined to the creator
+		/// and all the tokens will assgined to the creator.
+		///
+		/// origin: the creator of the organization
+		/// total: the total number of the new token
+		/// info: the details of the new organization
+		///
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
 		pub fn create_origanization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
@@ -182,10 +187,14 @@ decl_module! {
 		}
 		/// reserve the local asset(idv) to organization's Vault, it used to assigned by the proposal
 		/// of call function
+		///
+		/// id: Ordinal number created by the organization，it mapped whit the organization id.
+		/// value: the amount of the local asset(IDV)
+		///
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
 		pub fn deposit_to_origanization(origin,id: u32,value: T::Balance) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
-			Self::on_reserve_to_Vault(id,who,value)
+			Self::on_reserve_to_vault(id,who,value)
 		}
 
 		/// voting on the proposal by the members in the organization
@@ -211,7 +220,9 @@ decl_module! {
 			let expire = cur.saturating_add(length);
 			Self::on_create_proposal(id,who,expire,sub_param,call)
 		}
-		/// dispatch
+		/// the only way to use the vault of the organization. transfer the asset from
+		/// organization'vault to the user by vote decision in the members.
+		///
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
 		pub fn transfer(
 						origin,
@@ -229,6 +240,9 @@ impl<T: Trait> Module<T>  {
 	/// be accountid of organization id for orginfos in the storage
 	pub fn counter2Orgid(c: OrgCount) -> T::AccountId {
 		T::ModuleId::get().into_sub_account(c)
+	}
+	pub fn counter_of() -> OrgCount {
+		OrgCounter::get()
 	}
 	/// get the count of the proposal in the storage
 	pub fn count_of_proposals() -> u32 {
@@ -733,7 +747,7 @@ mod test {
 		new_test_ext().execute_with(|| {
 			let proposal = create_proposal2(make_transfer_fail_proposal(10));
 			assert_ok!(IdavollModule::base_create_proposal(ORGID.clone(),proposal.clone()));
-			assert_ok!(IdavollModule::reserve_to_Vault(ORGID.clone(),A.clone(),30));
+			assert_ok!(IdavollModule::reserve_to_vault(ORGID.clone(),A.clone(),30));
 			assert_eq!(IdavollModule::get_local_balance(ORGID),Ok(30));
 
 			// because the real asset in the Vault of the Finance Module
@@ -754,7 +768,7 @@ mod test {
 		new_test_ext().execute_with(|| {
 			let proposal = create_proposal2(make_transfer_proposal(10));
 			assert_ok!(IdavollModule::base_create_proposal(ORGID.clone(),proposal.clone()));
-			assert_ok!(IdavollModule::reserve_to_Vault(ORGID.clone(),A.clone(),30));
+			assert_ok!(IdavollModule::reserve_to_vault(ORGID.clone(),A.clone(),30));
 			assert_eq!(IdavollModule::get_local_balance(ORGID.clone()),Ok(30));
 			assert_eq!(IdvBalances::free_balance(ORGID.clone()),0);
 
@@ -778,7 +792,7 @@ mod test {
 			for i in 10..100 {
 				let proposal = create_proposal3(i as u128,make_transfer_proposal(i));
 				assert_ok!(IdavollModule::base_create_proposal(i as u128,proposal.clone()));
-				assert_ok!(IdavollModule::reserve_to_Vault(i as u128,A.clone(),i));
+				assert_ok!(IdavollModule::reserve_to_vault(i as u128,A.clone(),i));
 				assert_eq!(IdavollModule::get_local_balance(i as u128),Ok(i));
 
 				sum += i;

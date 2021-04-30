@@ -102,22 +102,6 @@ impl<Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned> OrgRulePar
     }
 }
 
-/*
-    Action  ==> innerAction
-    Action  ==> financeAction
-*/
-pub trait DefaultAction {
-    fn change_organization_name() -> DispatchResult;
-    fn transfer() -> DispatchResult;
-}
-
-pub trait InnerAction: DefaultAction {
-
-}
-pub trait FinanceAction: DefaultAction {
-
-}
-
 
 
 
