@@ -39,6 +39,7 @@ pub type BountyIndex = u32;
 /// pallet's module named 'Finance',the Finance will only be access the local asset(IDV),
 /// Although the local asset belongs to the organization, the organization cannot transfer it,
 /// the Vault was transfer only by the Finance.
+///
 pub trait BaseFinance<AccountId,Balance> {
     /// get the balance(for local idv asset) by the id(organization id), the return was
     /// the balance(record in to the idv-asset pallet storage), the real asset is storage
