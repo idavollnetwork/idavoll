@@ -7,6 +7,7 @@ use frame_support::{impl_outer_origin,impl_outer_dispatch, assert_ok, assert_noo
 use sp_core::H256;
 use sp_runtime::{Perbill, traits::{BlakeTwo256, IdentityLookup,Hash}, testing::Header,ModuleId};
 use pallet_balances;
+use frame_system::RawOrigin;
 use sp_std::{prelude::Vec, boxed::Box,collections::btree_map::BTreeMap};
 
 
@@ -21,17 +22,17 @@ impl_outer_dispatch! {
         }
     }
 
-type System = frame_system::Module<Test>;
-type IdvBalances = pallet_balances::Module<Test>;
-type IdavollAsset = idavoll_asset::Module<Test>;
-type IdavollAssetError = idavoll_asset::Error<Test>;
+pub type System = frame_system::Module<Test>;
+pub type IdvBalances = pallet_balances::Module<Test>;
+pub type IdavollAsset = idavoll_asset::Module<Test>;
+pub type IdavollAssetError = idavoll_asset::Error<Test>;
 
-const A: u128 = 100;
-const B: u128 = 200;
-const OWNER: u128 = 88;
-const RECEIVER: u128 = 7;
-const ORGID: u128 = 1000;
-const ORGID2: u128 = 2000;
+pub const A: u128 = 100;
+pub const B: u128 = 200;
+pub const OWNER: u128 = 88;
+pub const RECEIVER: u128 = 7;
+pub const ORGID: u128 = 1000;
+pub const ORGID2: u128 = 2000;
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Test;
@@ -92,7 +93,7 @@ impl idavoll_asset::Trait for Test {
 	type ModuleId = IdvAssetModuleId;
 }
 
-type IdavollModule = Module<Test>;
+pub type IdavollModule = Module<Test>;
 type IdavallCall = idavoll::Call<Test>;
 impl Trait for Test {
 	type Event = ();
@@ -131,9 +132,10 @@ pub fn make_transfer_proposal(value: u64) -> Vec<u8> {
 pub fn make_system_proposal(value: u64) -> Vec<u8> {
 	Call::System(frame_system::Call::remark(vec![0; 1])).encode()
 }
-pub fn create_org() -> OrgInfoOf<Test> {
+
+pub fn create_org(creator: u128) -> OrgInfoOf<Test> {
 	let mut org = OrgInfo::new();
-	org.members = vec![OWNER,1,2,3];
+	org.members = vec![creator,1,2,3];
 	org.param = OrgRuleParam::new(60,5,0);
 	org.clone()
 }
@@ -143,5 +145,16 @@ pub fn create_proposal(id: u128,call: Vec<u8>) -> ProposalOf<Test> {
 		org:    id.clone(),
 		call: 	call.clone(),
 		detail: ProposalDetail::new(OWNER.clone(),5,sub_param.clone()),
+	}
+}
+
+pub fn create_new_organization(creator: u128,total: u64) -> u128 {
+	let info = create_org(creator);
+	match IdavollModule::create_origanization(RawOrigin::Signed(creator).into(),total,info) {
+		Ok(val) => {
+			let c = OrgCounter::get();
+			IdavollModule::counter2Orgid(c)
+		},
+		Err(e) => u128::MAX,
 	}
 }
