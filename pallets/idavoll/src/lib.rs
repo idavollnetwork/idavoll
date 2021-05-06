@@ -199,7 +199,15 @@ decl_module! {
 			Self::on_reserve_to_vault(id,who,value)
 		}
 
-		/// voting on the proposal by the members in the organization
+		/// voting on the proposal by the members in the organization,user must be lock it's 'value'
+		/// of token amount to the idv-asset pallet and record the user's vote power (user's vote result)
+		/// in the proposal storage. the proposal will finish and execute on the vote process when the
+		/// vote result was satisfied with the rule of the proposal.
+		///
+		/// pid: the proposal id of the proposal return by create_proposal.
+		/// value: the weight of vote power,it is the token amount of the token in the organization.
+		/// yesorno: the user approve or against the proposal
+		///
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
 		pub fn vote_proposal(origin,pid: ProposalIdOf<T>,value: T::Balance,yesorno: bool) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
