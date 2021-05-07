@@ -51,7 +51,7 @@ impl<T: Trait> Module<T> {
         }
         let oinfo = Self::get_orginfo_by_id(oid.clone())?;
         let proposal = Self::get_proposal_by_id(pid)?;
-        if !proposal.detail.is_expire(height) {
+        if proposal.detail.is_expire(height) {
             return Err(Error::<T>::ProposalExpired.into());
         }
         // lock the voter's balance

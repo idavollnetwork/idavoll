@@ -139,11 +139,13 @@ pub fn create_org(creator: u128) -> OrgInfoOf<Test> {
 pub fn get_rule() -> OrgRuleParam<u64> {
 	OrgRuleParam::new(60,5,0)
 }
-pub fn create_proposal_without_storage(id: u128,call: Vec<u8>) -> ProposalOf<Test> {
+pub fn create_proposal_without_storage(id: u128,expire: u64,call: Vec<u8>) -> ProposalOf<Test> {
+	let mut cur = get_block_number();
+	cur = cur + expire;
 	Proposal {
 		org:    id.clone(),
 		call: 	call.clone(),
-		detail: ProposalDetail::new(OWNER.clone(),5,get_rule()),
+		detail: ProposalDetail::new(OWNER.clone(),cur,get_rule()),
 	}
 }
 
