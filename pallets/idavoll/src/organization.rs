@@ -233,6 +233,10 @@ impl<T: Trait> Module<T>  {
         }
     }
 
+    pub fn get_token_id_by_oid(oid: T::AccountId) -> Result<T::AssetId,DispatchResult> {
+        let org = Self::get_orginfo_by_id(oid)?;
+        Ok(org.get_asset_id())
+    }
     pub fn get_total_token_by_oid(oid: T::AccountId) -> Result<T::Balance,DispatchResult> {
         let org = Self::get_orginfo_by_id(oid)?;
 

@@ -30,7 +30,7 @@ pub type IdavollAssetError = idavoll_asset::Error<Test>;
 pub const A: u128 = 100;
 pub const B: u128 = 200;
 pub const OWNER: u128 = 88;
-pub const RECEIVER: u128 = 7;
+pub const RECEIVER: u128 = 77;
 pub const ORGID: u128 = 1000;
 pub const ORGID2: u128 = 2000;
 
