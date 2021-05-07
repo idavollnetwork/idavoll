@@ -154,7 +154,7 @@ decl_module! {
 		const ModuleId: ModuleId = T::ModuleId::get();
 		/// Move some assets from one holder to another.
 		#[weight = 0]
-		fn transfer(origin,
+		pub fn transfer(origin,
 			#[compact] id: T::AssetId,
 			target: <T::Lookup as StaticLookup>::Source,
 			#[compact] amount: T::Balance
