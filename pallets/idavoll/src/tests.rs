@@ -14,13 +14,16 @@ fn it_works_for_first_organization() {
 
 		// vote to transfer the vault
 		// make the proposal with the proposal id
-		// let call = make_transfer_proposal(10);
-		// let mut tmp_proposal = create_proposal(org_id,IdavollModule::call_to_vec(call.clone()));
-		// let proposal_id = IdavollModule::make_proposal_id(&tmp_proposal.clone());
-		//
-		// assert_ok!(IdavollModule::create_proposal(RawOrigin::Signed(OWNER.clone()),
-		// c,tmp_proposal.detail.end_dt,tmp_proposal.detail.sub_param.clone(),call));
-		// assert_eq!(IdavollModule::get_proposal_by_id(proposal_id.clone()),Ok(tmp_proposal.clone()));
+		let call = make_transfer_proposal(10);
+		let mut tmp_proposal = create_proposal_without_storage(org_id,call_to_vec(call.clone()));
+		let proposal_id = IdavollModule::make_proposal_id(&tmp_proposal.clone());
+
+		assert_ok!(IdavollModule::create_proposal(RawOrigin::Signed(OWNER.clone()).into(),c,
+		tmp_proposal.detail.end_dt,tmp_proposal.detail.sub_param.clone(),call));
+		// get the proposal from the storage
+		assert_eq!(IdavollModule::get_proposal_by_id(proposal_id.clone()),Ok(tmp_proposal.clone()));
+
+		// vote for the proposal by the same proposal_id
 
 	});
 }

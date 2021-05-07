@@ -123,9 +123,9 @@ pub fn set_block_number(n: <Test as frame_system::Trait>::BlockNumber) -> <Test 
 pub fn get_block_number() -> <Test as frame_system::Trait>::BlockNumber {
 	System::block_number()
 }
-// pub fn call_to_vec(call: Box<<Self as Trait>::Call>) -> Vec<u8> {
-// 	call.encode()
-// }
+pub fn call_to_vec(call: Box<<Test as Trait>::Call>) -> Vec<u8> {
+	call.encode()
+}
 pub fn make_transfer_proposal(value: u64) -> Box<Call> {
 	Box::new(Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value)))
 }
@@ -139,7 +139,7 @@ pub fn create_org(creator: u128) -> OrgInfoOf<Test> {
 pub fn get_rule() -> OrgRuleParam<u64> {
 	OrgRuleParam::new(60,5,0)
 }
-pub fn create_proposal(id: u128,call: Vec<u8>) -> ProposalOf<Test> {
+pub fn create_proposal_without_storage(id: u128,call: Vec<u8>) -> ProposalOf<Test> {
 	Proposal {
 		org:    id.clone(),
 		call: 	call.clone(),
