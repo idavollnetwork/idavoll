@@ -213,7 +213,13 @@ decl_module! {
 			let who = ensure_signed(origin)?;
 			Self::on_vote_proposal(pid,who,value,yesorno,frame_system::Module::<T>::block_number())
 		}
-		/// voting on the proposal by the members in the organization
+		/// voting on the proposal by the members in the organization,user in the organization can add
+		/// the other account into the organization, New members must obtain tokens before they can
+		/// participate in voting.
+		///
+		/// target: the new account
+		/// id: Ordinal number created by the organization，it mapped whit the organization id.
+		///
 		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
 		pub fn add_member_by_onwer(origin,target: <T::Lookup as StaticLookup>::Source,id: u32) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
