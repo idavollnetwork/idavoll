@@ -288,6 +288,7 @@ impl pallet_idavoll::Trait for Runtime {
 	type ModuleId = IdavollModuleId;
 	type AssetHandle = IdvAsset;
 	type Finance = IdvAsset;
+	type WeightInfo = ();
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

@@ -30,6 +30,9 @@ impl crate::WeightInfo for () {
             .saturating_add(DbWeight::get().writes(1 as Weight))
             .saturating_add(DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
     }
+    fn deposit_to_origanization() -> Weight {
+        (100_000_000 as Weight)
+    }
     fn create_proposal() -> Weight {
         (100_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(1 as Weight))
