@@ -49,6 +49,7 @@ mod rules;
 mod voting;
 mod utils;
 mod default_weights;
+mod benchmarking;
 
 pub use organization::{OrgInfo, Proposal,ProposalDetail,ProposalDetailOf};
 use idavoll_asset::{token::BaseToken,finance::BaseFinance,LocalBalance,Trait as AssetTrait};
@@ -56,7 +57,8 @@ use rules::{OrgRuleParam};
 
 
 pub trait WeightInfo {
-	fn create_origanization(b: u32) -> Weight;
+	fn create_origanization(m: u32) -> Weight;
+	fn deposit_to_origanization() -> Weight;
 	fn create_proposal() -> Weight;
 	fn veto_proposal(b: u32, c: u32) -> Weight;
 	fn finish_proposal(b: u32, c: u32) -> Weight;
@@ -86,6 +88,9 @@ pub trait Trait: frame_system::Trait {
 	/// keep the local asset(idv) of the organization
 	type Finance: BaseFinance<Self::AccountId,Self::Balance>;
 	type AssetId: Parameter + AtLeast32Bit + Default + Copy;
+
+	/// Weight information for extrinsics in this pallet.
+	type WeightInfo: WeightInfo;
 }
 
 type BalanceOf<T> = <T as Trait>::Balance;
@@ -106,7 +111,6 @@ pub type ProposalOf<T> = Proposal<
 pub type OrgRuleParamOf<T> = OrgRuleParam<BalanceOf<T>>;
 
 // The pallet's runtime storage items.
-// https://substrate.dev/docs/en/knowledgebase/runtime/storage
 decl_storage! {
 	trait Store for Module<T: Trait> as IdavollModule {
 		pub OrgCounter get(fn counter): OrgCount = 0;
@@ -178,7 +182,7 @@ decl_module! {
 		/// total: the total number of the new token
 		/// info: the details of the new organization
 		///
-		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		#[weight = 10_000 + T::WeightInfo::create_origanization(info.members.len() as u32)]
 		pub fn create_origanization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let asset_id = Self::create_new_token(owner.clone(),total);
@@ -193,7 +197,7 @@ decl_module! {
 		/// id: Ordinal number created by the organization，it mapped whit the organization id.
 		/// value: the amount of the local asset(IDV)
 		///
-		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		#[weight = 10_000 + T::WeightInfo::deposit_to_origanization()]
 		pub fn deposit_to_origanization(origin,id: u32,value: T::Balance) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::on_reserve_to_vault(id,who,value)

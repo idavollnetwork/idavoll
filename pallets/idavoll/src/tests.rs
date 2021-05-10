@@ -150,3 +150,54 @@ fn it_works_for_5_members_vote_pass() {
 	});
 }
 
+#[test]
+fn it_works_for_5_members_vote_fail() {
+	new_test_ext().execute_with(|| {
+		let c = IdavollModule::counter_of();
+		let org_id = create_new_organization(OWNER.clone(),100);
+		let asset_id = IdavollModule::get_token_id_by_oid(org_id.clone()).unwrap();
+		assert_ne!(org_id,u128::MAX);
+		assert_ok!(IdavollModule::deposit_to_origanization(RawOrigin::Signed(A).into(),c,200));
+		assert_eq!(IdavollModule::get_count_members(org_id),1);
+		assert_eq!(IdavollAsset::vault_balance_of(org_id),Ok(200 as u64));
+		// add 4 members
+		assert_ok!(IdavollModule::add_member_by_onwer(RawOrigin::Signed(OWNER.clone()).into(),1,c));
+		assert_ok!(IdavollModule::add_member_by_onwer(RawOrigin::Signed(OWNER.clone()).into(),2,c));
+		assert_ok!(IdavollModule::add_member_by_onwer(RawOrigin::Signed(OWNER.clone()).into(),3,c));
+		assert_ok!(IdavollModule::add_member_by_onwer(RawOrigin::Signed(OWNER.clone()).into(),4,c));
+		assert_eq!(IdavollModule::get_count_members(org_id),5);
+		// assign the tokens for voting
+		assert_ok!(IdavollAsset::transfer(RawOrigin::Signed(OWNER.clone()).into(),asset_id.clone(),1,5));
+		assert_ok!(IdavollAsset::transfer(RawOrigin::Signed(OWNER.clone()).into(),asset_id.clone(),2,10));
+		assert_ok!(IdavollAsset::transfer(RawOrigin::Signed(OWNER.clone()).into(),asset_id.clone(),3,20));
+		assert_ok!(IdavollAsset::transfer(RawOrigin::Signed(OWNER.clone()).into(),asset_id.clone(),4,25));
+		assert_eq!(IdavollAsset::free_balance(asset_id,&OWNER.clone()),40);
+
+		set_block_number(1);
+		assert_eq!(get_block_number(),1 as u64);
+		// vote to transfer the vault
+		// make the proposal with the proposal id
+		let call = make_transfer_proposal(30);
+		let mut tmp_proposal = create_proposal_without_storage(org_id,5,call_to_vec(call.clone()));
+		let proposal_id = IdavollModule::make_proposal_id(&tmp_proposal.clone());
+
+		assert_ok!(IdavollModule::create_proposal(RawOrigin::Signed(OWNER.clone()).into(),c,
+		5,tmp_proposal.detail.sub_param.clone(),call));
+		// get the proposal from the storage
+		assert_eq!(IdavollModule::get_proposal_by_id(proposal_id.clone()),Ok(tmp_proposal.clone()));
+
+		// vote for the proposal
+		assert_eq!(IdvBalances::free_balance(RECEIVER.clone()),0 as u64);
+		// vote for the proposal by the same proposal_id
+		assert_ok!(IdavollModule::vote_proposal(RawOrigin::Signed(OWNER.clone()).into(),proposal_id.clone(),20,true));
+		assert_ok!(IdavollModule::vote_proposal(RawOrigin::Signed(1).into(),proposal_id.clone(),3,true));
+		assert_ok!(IdavollModule::vote_proposal(RawOrigin::Signed(2).into(),proposal_id.clone(),8,false));
+		assert_ok!(IdavollModule::vote_proposal(RawOrigin::Signed(3).into(),proposal_id.clone(),20,true));
+		assert_ok!(IdavollModule::vote_proposal(RawOrigin::Signed(4).into(),proposal_id.clone(),20,true));
+
+		// the vote result, the proposal was passed，60% 'yes' votes was passed
+		// make sure the RECEIVER has the 'value' balance and the vault was reduce 'value' balance
+		assert_eq!(IdvBalances::free_balance(RECEIVER.clone()),0);
+		assert_eq!(IdavollAsset::vault_balance_of(org_id.clone()),Ok(200));
+	});
+}

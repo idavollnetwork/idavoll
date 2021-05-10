@@ -153,7 +153,7 @@ decl_module! {
         /// The idv-asset's module id, used for deriving its sovereign account ID.
 		const ModuleId: ModuleId = T::ModuleId::get();
 		/// Move some assets from one holder to another.
-		#[weight = 0]
+		#[weight = 100_000]
 		pub fn transfer(origin,
 			#[compact] id: T::AssetId,
 			target: <T::Lookup as StaticLookup>::Source,
