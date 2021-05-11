@@ -20,7 +20,6 @@
 ///
 
 use frame_support::{ensure, dispatch::{self, Parameter}, StorageValue};
-use crate::utils::*;
 use crate::rules::{BaseRule,OrgRuleParam};
 use crate::{OrgCounter, OrgInfos,Proposals,ProposalOf,ProposalIdOf,Error,
             Module, RawEvent, Trait, OrgCount,OrgInfoOf,OrgRuleParamOf,

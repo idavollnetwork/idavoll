@@ -25,8 +25,6 @@ use sp_runtime::{
     traits::{Saturating, Zero,Hash,Member,AtLeast32BitUnsigned},
 };
 use sp_std::{cmp::PartialOrd, marker};
-
-use crate::utils::*;
 use crate::{ Error,Module, RawEvent, Trait,
             OrgCount,OrgInfoOf,BalanceOf};
 #[cfg(feature = "std")]
