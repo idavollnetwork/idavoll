@@ -24,7 +24,6 @@ use frame_support::{
 };
 use crate::{OrgCounter, OrgInfos,Proposals,ProposalOf,ProposalIdOf, Error,Module, RawEvent, Trait,
             OrgCount,OrgInfoOf,BalanceOf};
-use crate::utils::*;
 use crate::rules::{BaseRule,OrgRuleParam};
 
 #[cfg(feature = "std")]

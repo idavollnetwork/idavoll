@@ -47,7 +47,6 @@ mod tests;
 mod organization;
 mod rules;
 mod voting;
-mod utils;
 mod default_weights;
 mod benchmarking;
 
