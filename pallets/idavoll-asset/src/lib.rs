@@ -30,11 +30,6 @@ use sp_runtime::{RuntimeDebug, ModuleId,
 }};
 use codec::{Encode, Decode, HasCompact};
 
-#[cfg(test)]
-mod mock;
-
-#[cfg(test)]
-mod tests;
 pub mod token;
 pub mod finance;
 
