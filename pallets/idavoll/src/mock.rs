@@ -103,6 +103,7 @@ impl Trait for Test {
 	type ModuleId = IdavollModuleId;
 	type AssetHandle = IdavollAsset;
 	type Finance = IdavollAsset;
+	type WeightInfo = ();
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
