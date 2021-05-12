@@ -291,7 +291,7 @@ impl<T: Trait> Module<T>  {
 		}
 	}
 	/// write the organization info to the storage on chain by create organization
-	pub fn storage_new_organization(oinfo: OrgInfoOf<T>) -> dispatch::DispatchResult {
+	fn storage_new_organization(oinfo: OrgInfoOf<T>) -> dispatch::DispatchResult {
 		let counter = OrgCounter::get();
 		let new_counter = counter.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
 		let oid = Self::counter2Orgid(counter);
@@ -472,6 +472,7 @@ mod test {
 		type ModuleId = IdavollModuleId;
 		type AssetHandle = IdavollAsset;
 		type Finance = IdavollAsset;
+		type WeightInfo = ();
 	}
 
 	fn new_test_ext() -> sp_io::TestExternalities {
