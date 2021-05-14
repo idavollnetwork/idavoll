@@ -289,6 +289,21 @@ impl<T: Trait> Module<T>  {
 			Err(Error::<T>::OrganizationNotFound.into())
 		}
 	}
+	/// check the user belong to the organization
+	pub fn is_member(oid: T::AccountId,who: &T::AccountId) -> bool {
+		match <OrgInfos<T>>::get(oid.clone()) {
+			Some(val) => val.is_member(who.clone()),
+			None => false,
+		}
+	}
+	/// return proposal info
+	pub fn get_proposal_by_id(pid: ProposalIdOf<T>) -> Result<ProposalOf<T>, dispatch::DispatchError> {
+		match Proposals::<T>::get(pid) {
+			Some(proposal) => Ok(proposal),
+			None => Err(Error::<T>::ProposalNotFound.into()),
+		}
+	}
+
 	/// write the organization info to the storage on chain by create organization
 	fn storage_new_organization(oinfo: OrgInfoOf<T>) -> dispatch::DispatchResult {
 		let counter = OrgCounter::get();
@@ -301,7 +316,7 @@ impl<T: Trait> Module<T>  {
 		Ok(())
 	}
 
-	pub fn base_create_proposal(oid: T::AccountId,proposal: ProposalOf<T>) -> dispatch::DispatchResult {
+	fn base_create_proposal(oid: T::AccountId,proposal: ProposalOf<T>) -> dispatch::DispatchResult {
 
 		let proposal_id = Self::make_proposal_id(&proposal);
 		if Proposals::<T>::contains_key(proposal_id) {
@@ -312,14 +327,8 @@ impl<T: Trait> Module<T>  {
 		Ok(())
 	}
 
-	pub fn is_member(oid: T::AccountId,who: &T::AccountId) -> bool {
-		match <OrgInfos<T>>::get(oid.clone()) {
-			Some(val) => val.is_member(who.clone()),
-			None => false,
-		}
-	}
 	// add a member into a organization by orgid
-	pub fn base_add_member_on_orgid(oid: T::AccountId,memberID: T::AccountId) -> dispatch::DispatchResult {
+	fn base_add_member_on_orgid(oid: T::AccountId,memberID: T::AccountId) -> dispatch::DispatchResult {
 		OrgInfos::<T>::try_mutate(oid,|infos| -> dispatch::DispatchResult {
 			match infos {
 				Some(org) => {match org.members
@@ -335,17 +344,12 @@ impl<T: Trait> Module<T>  {
 			}
 		})
 	}
-	pub fn get_proposal_by_id(pid: ProposalIdOf<T>) -> Result<ProposalOf<T>, dispatch::DispatchError> {
-		match Proposals::<T>::get(pid) {
-			Some(proposal) => Ok(proposal),
-			None => Err(Error::<T>::ProposalNotFound.into()),
-		}
-	}
-	pub fn remove_proposal_by_id(pid: ProposalIdOf<T>) {
+
+	fn remove_proposal_by_id(pid: ProposalIdOf<T>) {
 		Proposals::<T>::remove(pid);
 	}
 	/// add vote infos in the proposal item on the storage
-	pub fn base_vote_on_proposal(pid: ProposalIdOf<T>, voter: T::AccountId,
+	fn base_vote_on_proposal(pid: ProposalIdOf<T>, voter: T::AccountId,
 								 value: BalanceOf<T>, yesorno: bool) -> dispatch::DispatchResult {
 		Proposals::<T>::try_mutate(pid,|proposal| -> dispatch::DispatchResult {
 			if let Some(p) = proposal {
@@ -356,7 +360,7 @@ impl<T: Trait> Module<T>  {
 		})?;
 		Ok(())
 	}
-	pub fn base_call_dispatch(pid: ProposalIdOf<T>,proposal: ProposalOf<T>) -> dispatch::DispatchResult {
+	fn base_call_dispatch(pid: ProposalIdOf<T>,proposal: ProposalOf<T>) -> dispatch::DispatchResult {
 		// remove the proposal from the storage by the proposal passed
 		let call = <T as Trait>::Call::decode(&mut &proposal.clone().call[..]).map_err(|_| Error::<T>::ProposalDecodeFailed)?;
 		let res = call.dispatch(frame_system::RawOrigin::Signed(proposal.clone().org).into());
