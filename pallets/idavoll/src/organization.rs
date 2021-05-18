@@ -285,6 +285,7 @@ impl<T: Trait> Module<T>  {
     pub fn on_add_member(owner: T::AccountId,who: T::AccountId,id: u32) -> dispatch::DispatchResult {
         let oid = Self::counter2Orgid(id);
         let org = Self::get_orginfo_by_id(oid.clone())?;
+        ensure!(Self::is_member(oid.clone(),&owner),Error::<T>::NotMemberInOrg);
         ensure!(!Self::is_member(oid.clone(),&who),Error::<T>::MemberDuplicate);
         Self::base_add_member_on_orgid(oid.clone(),who.clone())
     }
