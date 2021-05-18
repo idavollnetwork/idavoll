@@ -34,30 +34,18 @@ impl crate::WeightInfo for () {
         (100_000_000 as Weight)
     }
     fn create_proposal() -> Weight {
-        (100_000_000 as Weight)
+        (600_000_000 as Weight)
             .saturating_add(DbWeight::get().reads(1 as Weight))
             .saturating_add(DbWeight::get().writes(1 as Weight))
     }
-    fn veto_proposal(b: u32, c: u32) -> Weight {
-        (100_000_000 as Weight)
-            .saturating_add((10_000_000 as Weight).saturating_mul(b as Weight))
-            .saturating_add((10_000_000 as Weight).saturating_mul(c as Weight))
-            .saturating_add(DbWeight::get().reads(1 as Weight))
-            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
-            .saturating_add(DbWeight::get().writes(1 as Weight))
-            .saturating_add(DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
-            .saturating_add(DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
+    fn veto_proposal() -> Weight {
+        (200_000_000 as Weight)
+            .saturating_add(DbWeight::get().reads((100 as Weight).saturating_mul(10 as Weight)))
+            .saturating_add(DbWeight::get().writes((500 as Weight).saturating_mul(10 as Weight)))
     }
-    fn finish_proposal(b: u32, c: u32) -> Weight {
-        (100_000_000 as Weight)
-            .saturating_add((10_000_000 as Weight).saturating_mul(b as Weight))
-            .saturating_add((10_000_000 as Weight).saturating_mul(c as Weight))
-            .saturating_add(DbWeight::get().reads(1 as Weight))
-            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
-            .saturating_add(DbWeight::get().writes(1 as Weight))
-            .saturating_add(DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
-            .saturating_add(DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
+    fn add_member_by_onwer() -> Weight {
+        (200_000_000 as Weight)
+            .saturating_add(DbWeight::get().reads((100 as Weight).saturating_mul(10 as Weight)))
+            .saturating_add(DbWeight::get().writes((500 as Weight).saturating_mul(10 as Weight)))
     }
 }
