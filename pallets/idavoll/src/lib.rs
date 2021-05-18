@@ -59,8 +59,8 @@ pub trait WeightInfo {
 	fn create_origanization(m: u32) -> Weight;
 	fn deposit_to_origanization() -> Weight;
 	fn create_proposal() -> Weight;
-	fn veto_proposal(b: u32, c: u32) -> Weight;
-	fn finish_proposal(b: u32, c: u32) -> Weight;
+	fn veto_proposal() -> Weight;
+	fn add_member_by_onwer() -> Weight;
 }
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -182,7 +182,7 @@ decl_module! {
 		/// total: the total number of the new token
 		/// info: the details of the new organization
 		///
-		#[weight = 10_000 + T::WeightInfo::create_origanization(info.members.len() as u32)]
+		#[weight = T::WeightInfo::create_origanization(info.members.len() as u32)]
 		pub fn create_origanization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let asset_id = Self::create_new_token(owner.clone(),total);
@@ -197,7 +197,7 @@ decl_module! {
 		/// id: Ordinal number created by the organization，it mapped whit the organization id.
 		/// value: the amount of the local asset(IDV)
 		///
-		#[weight = 10_000 + T::WeightInfo::deposit_to_origanization()]
+		#[weight = T::WeightInfo::deposit_to_origanization()]
 		pub fn deposit_to_origanization(origin,id: u32,value: T::Balance) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::on_reserve_to_vault(id,who,value)
@@ -212,7 +212,7 @@ decl_module! {
 		/// value: the weight of vote power,it is the token amount of the token in the organization.
 		/// yesorno: the user approve or against the proposal
 		///
-		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		#[weight = T::WeightInfo::veto_proposal()]
 		pub fn vote_proposal(origin,pid: ProposalIdOf<T>,value: T::Balance,yesorno: bool) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::on_vote_proposal(pid,who,value,yesorno,frame_system::Module::<T>::block_number())
@@ -224,7 +224,7 @@ decl_module! {
 		/// target: the new account
 		/// id: Ordinal number created by the organization，it mapped whit the organization id.
 		///
-		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		#[weight = T::WeightInfo::add_member_by_onwer()]
 		pub fn add_member_by_onwer(origin,target: <T::Lookup as StaticLookup>::Source,id: u32) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let who = T::Lookup::lookup(target)?;
@@ -239,7 +239,7 @@ decl_module! {
 		/// sub_param: the vote rule, it was satisfied with the organization's rule,more details in
 		/// the 'RULE' Module
 		///
-		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		#[weight = T::WeightInfo::create_proposal()]
 		pub fn create_proposal(origin,id: u32,length: T::BlockNumber,sub_param: OrgRuleParamOf<T>,
 		call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -250,7 +250,7 @@ decl_module! {
 		/// the only way to use the vault of the organization. transfer the asset from
 		/// organization'vault to the user by vote decision in the members.
 		///
-		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+		#[weight = 100_000]
 		pub fn transfer(
 						origin,
 		        		dest: <T::Lookup as StaticLookup>::Source,
