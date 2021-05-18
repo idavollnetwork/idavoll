@@ -151,7 +151,8 @@ decl_error! {
 		/// need the maximum number for the storage value for the fixed type.
 		StorageOverflow,
 		OrganizationNotFound,
-		NotOwnerByOrg,
+		/// it is not a member in the organization
+		NotMemberInOrg,
 		MemberDuplicate,
 		/// not found the proposal by id in the runtime storage
 		ProposalNotFound,
@@ -589,7 +590,7 @@ mod test {
 			assert_eq!(IdavollModule::get_orginfo_by_id(org_id),Ok(org.clone()));
 			assert_eq!(IdavollModule::get_count_members(org_id),4);
 			// add member for the organization
-
+			assert_noop!(IdavollModule::on_add_member(22,2,0),Error::<Test>::NotMemberInOrg);
 			assert_noop!(IdavollModule::on_add_member(1,2,0),Error::<Test>::MemberDuplicate);
 			assert_ok!(IdavollModule::on_add_member(1,22,0));
 			assert_eq!(IdavollModule::get_count_members(org_id),5);
