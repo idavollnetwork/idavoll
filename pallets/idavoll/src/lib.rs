@@ -138,8 +138,8 @@ decl_event!(
         ProposalPassed(ProposalId),
         /// create a proposal.		\[organization id,proposal id,creator]
         ProposalCreated(AccountId,ProposalId,AccountId),
-        /// Proposal Refused \[proposal id]
-        ProposalRefuse(AccountId),
+        /// Proposal Refused or expired \[proposal id]
+        ProposalRefuse(ProposalId),
 	}
 );
 
