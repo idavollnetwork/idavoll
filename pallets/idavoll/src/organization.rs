@@ -69,7 +69,7 @@ impl<AccountId: Ord + Clone,
             sub_param: subparam.clone(),
         }
     }
-    pub fn vote(&mut self,voter: AccountId,value: Balance,yesorno: bool) -> dispatch::DispatchResult {
+    pub fn vote(&mut self,voter: AccountId,value: Balance,yesorno: bool) {
         if let Some(val) = self.votes.get_mut(&voter.clone()) {
             if val.1 == yesorno {
                 *val = (value.saturating_add(val.0.clone()),yesorno);
@@ -79,7 +79,6 @@ impl<AccountId: Ord + Clone,
         } else {
             self.votes.insert(voter.clone(),(value,yesorno));
         }
-        Ok(())
     }
     pub fn summary(&self) -> (Balance,Balance) {
         let (mut yes_balance,mut no_balance) = (Balance::default(),Balance::default());

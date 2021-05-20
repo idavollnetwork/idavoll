@@ -4,13 +4,14 @@
 use super::*;
 use crate as idavoll;
 use frame_support::{
-	codec::{Decode, Encode},impl_outer_origin,impl_outer_dispatch,
-	assert_ok, assert_noop, parameter_types, weights::Weight};
+	codec::{Encode},
+	impl_outer_origin,impl_outer_dispatch,
+	parameter_types, weights::Weight};
 use sp_core::H256;
-use sp_runtime::{Perbill, traits::{BlakeTwo256, IdentityLookup,Hash}, testing::Header,ModuleId};
+use sp_runtime::{Perbill, traits::{BlakeTwo256, IdentityLookup}, testing::Header,ModuleId};
 use pallet_balances;
 use frame_system::RawOrigin;
-use sp_std::{prelude::Vec, boxed::Box,collections::btree_map::BTreeMap};
+use sp_std::{prelude::Vec, boxed::Box};
 
 
 impl_outer_origin! {
@@ -27,14 +28,13 @@ impl_outer_dispatch! {
 pub type System = frame_system::Module<Test>;
 pub type IdvBalances = pallet_balances::Module<Test>;
 pub type IdavollAsset = idavoll_asset::Module<Test>;
-pub type IdavollAssetError = idavoll_asset::Error<Test>;
 
 pub const A: u128 = 100;
 pub const B: u128 = 200;
 pub const OWNER: u128 = 88;
 pub const RECEIVER: u128 = 77;
-pub const ORGID: u128 = 1000;
-pub const ORGID2: u128 = 2000;
+// pub const ORGID: u128 = 1000;
+// pub const ORGID2: u128 = 2000;
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Test;
@@ -133,7 +133,7 @@ pub fn make_transfer_proposal(value: u64) -> Box<Call> {
 	Box::new(Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value)))
 }
 
-pub fn create_org(creator: u128) -> OrgInfoOf<Test> {
+pub fn create_org(_creator: u128) -> OrgInfoOf<Test> {
 	let mut org = OrgInfo::new();
 	org.members = vec![];
 	org.param = get_rule();
@@ -156,9 +156,9 @@ pub fn create_new_organization(creator: u128,total: u64) -> u128 {
 	let info = create_org(creator);
 	let c = IdavollModule::counter_of();
 	match IdavollModule::create_origanization(RawOrigin::Signed(creator).into(),total,info) {
-		Ok(val) => {
+		Ok(_val) => {
 			IdavollModule::counter_2_orgid(c)
 		},
-		Err(e) => u128::MAX,
+		Err(_e) => u128::MAX,
 	}
 }
