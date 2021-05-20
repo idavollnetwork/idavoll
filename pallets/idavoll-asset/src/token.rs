@@ -15,15 +15,14 @@
  */
 
 use codec::FullCodec;
-use frame_support::traits::{BalanceStatus, LockIdentifier};
+// use frame_support::traits::{BalanceStatus, LockIdentifier};
 use sp_runtime::{
     traits::{AtLeast32BitUnsigned, MaybeSerializeDeserialize,Saturating},
-    DispatchError, DispatchResult,
+    DispatchResult,
 };
 use sp_std::{
     cmp::{Eq, PartialEq},
     fmt::Debug,
-    result,
 };
 use crate::{Trait,Module};
 

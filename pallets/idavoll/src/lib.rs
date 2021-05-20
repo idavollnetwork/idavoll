@@ -22,20 +22,21 @@
 /// https://substrate.dev/docs/en/knowledgebase/runtime/frame
 
 use frame_support::{
-	codec::{Decode, Encode},
+	codec::{Decode},
 	decl_module, decl_storage, decl_event, decl_error,
 	dispatch::{
 		self,Dispatchable, Parameter, PostDispatchInfo,
 	},
-	traits::{Get,EnsureOrigin},
-	ensure,weights::{GetDispatchInfo, Weight},
+	traits::{Get},
+	weights::{GetDispatchInfo, Weight},
 };
 use frame_system::ensure_signed;
-use sp_runtime::{Permill, ModuleId, RuntimeDebug,
-				 traits::{Zero, StaticLookup, AccountIdConversion,
-						  Saturating,AtLeast32BitUnsigned,AtLeast32Bit,
-						  Member,MaybeSerializeDeserialize,
-				 }};
+use sp_runtime::{
+	ModuleId,
+	traits::{StaticLookup, AccountIdConversion,
+			 Saturating,AtLeast32BitUnsigned,AtLeast32Bit,
+			 Member,MaybeSerializeDeserialize,
+	}};
 use sp_std::{boxed::Box, prelude::Vec};
 
 #[cfg(test)]
@@ -51,7 +52,7 @@ mod default_weights;
 mod benchmarking;
 
 pub use organization::{OrgInfo, Proposal,ProposalDetail,ProposalDetailOf};
-use idavoll_asset::{token::BaseToken,finance::BaseFinance,LocalBalance,Trait as AssetTrait};
+use idavoll_asset::{token::BaseToken,finance::BaseFinance};
 use rules::{OrgRuleParam};
 
 
