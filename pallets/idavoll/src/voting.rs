@@ -40,12 +40,13 @@ impl<T: Trait> Module<T> {
             return Err(Error::<T>::NotMember.into());
         }
         let oinfo = Self::get_orginfo_by_id(oid.clone())?;
+        let aid = oinfo.get_asset_id();
         let proposal = Self::get_proposal_by_id(pid)?;
         if proposal.detail.is_expire(height) {
+            Self::try_close_proposal(aid.clone(),pid.clone(),height)?;
             return Err(Error::<T>::ProposalExpired.into());
         }
         // lock the voter's balance
-        let aid = oinfo.get_asset_id();
         T::AssetHandle::lock(aid.clone(),&voter.clone(),value)?;
         Self::base_vote_on_proposal(pid,voter,value,yesorno)?;
         // check the proposal can closed
@@ -57,7 +58,7 @@ impl<T: Trait> Module<T> {
         let proposal = Self::get_proposal_by_id(pid)?;
         let is_expire = proposal.detail.is_expire(height);
         let is_pass = Self::is_pass(proposal.clone());
-        if is_pass {
+        if is_pass && !is_expire {
             Self::base_call_dispatch(pid.clone(),proposal.clone())?;
         }
         if is_expire || is_pass {
@@ -68,7 +69,12 @@ impl<T: Trait> Module<T> {
                     _ => return,
                 }
             });
-            Self::deposit_event(RawEvent::ProposalPassed(pid));
+            if is_expire {
+                Self::deposit_event(RawEvent::ProposalRefuse(pid));
+            }
+            if is_pass {
+                Self::deposit_event(RawEvent::ProposalPassed(pid));
+            }
         }
         Ok(())
     }
