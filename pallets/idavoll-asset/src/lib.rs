@@ -20,7 +20,7 @@
 
 use sp_std::{fmt::Debug};
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch,
-                    traits::{Get,EnsureOrigin,Currency, ReservableCurrency,ExistenceRequirement::AllowDeath},
+                    traits::{Get,Currency, ReservableCurrency,ExistenceRequirement::AllowDeath},
                     Parameter,ensure};
 use frame_system::ensure_signed;
 use sp_runtime::{RuntimeDebug, ModuleId,
@@ -28,7 +28,7 @@ use sp_runtime::{RuntimeDebug, ModuleId,
                           StaticLookup, Saturating, CheckedSub, CheckedAdd,
                           MaybeSerializeDeserialize,
 }};
-use codec::{Encode, Decode, HasCompact};
+use codec::{Encode, Decode};
 
 pub mod token;
 pub mod finance;
