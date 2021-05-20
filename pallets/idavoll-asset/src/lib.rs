@@ -485,7 +485,7 @@ mod test {
     }
 
     #[test]
-    fn Vault_transfer_and_balance_should_not_work() {
+    fn vault_transfer_and_balance_should_not_work() {
         new_test_ext().execute_with(|| {
             assert_noop!(IdavollAsset::vault_balance_of(ORGID),Error::<Test>::UnknownOwnerID);
             assert_ok!(IdavollAsset::transfer_to_vault(ORGID, A,30));

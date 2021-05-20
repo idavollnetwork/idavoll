@@ -38,7 +38,6 @@ pub trait BaseRule {
     type Params;
     type Data;
 
-    /// i
     fn on_proposal_pass(height: Self::BlockNumber,content: Self::Data,detail: Self::Params) -> bool;
     fn on_proposal_expired(height: Self::BlockNumber,detail: Self::Params) -> DispatchResult;
     fn on_can_close(creator: Self::AccountId,detail: Self::Params) -> DispatchResult;
@@ -46,7 +45,7 @@ pub trait BaseRule {
 
 /// OrgRuleParam was used to vote by decision, it passed by all 'TRUE',
 /// passed by more than 60% 'Yes' votes and less than 5% 'no' votes.
-/// 'pass' = 'yes > minAffirmative%' and 'no <= maxDissenting' and 'nul <= abstention'
+/// 'pass' = 'yes > min_affirmative%' and 'no <= max_dissenting' and 'nul <= abstention'
 ///
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -55,9 +54,9 @@ where
     Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned,
 {
     /// Minimum approval votes threshold in a organization
-    pub minAffirmative: u32,
+    pub min_affirmative: u32,
     /// Maximum negative votes threshold in a organization
-    pub maxDissenting:  u32,
+    pub max_dissenting:  u32,
     /// the abstention votes threshold in a organization,More than a certain
     /// number of abstentions on the proposal then it will gradually become invalid
     pub abstention: u32,
@@ -67,30 +66,30 @@ where
 impl<Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned> OrgRuleParam<Balance> {
     pub fn default() -> Self {
         Self{
-            minAffirmative: 0 as u32,
-            maxDissenting: 0 as u32,
+            min_affirmative: 0 as u32,
+            max_dissenting: 0 as u32,
             abstention: 0 as u32,
             _phantom: marker::PhantomData,
         }
     }
     pub fn new(a: u32,d: u32,s: u32) -> Self {
         Self{
-            minAffirmative: a,
-            maxDissenting: d,
+            min_affirmative: a,
+            max_dissenting: d,
             abstention: s,
             _phantom: marker::PhantomData,
         }
     }
     pub fn is_pass(&self,yes_amount: Balance,no_amount: Balance,nu_amount: Balance,total: Balance) -> bool {
 
-        (self.minAffirmative == 0 || yes_amount > Perbill::from_percent(self.minAffirmative) * total.clone()) &&
-            (self.maxDissenting == 0 || !(no_amount > Perbill::from_percent(self.maxDissenting) * total.clone())) &&
+        (self.min_affirmative == 0 || yes_amount > Perbill::from_percent(self.min_affirmative) * total.clone()) &&
+            (self.max_dissenting == 0 || !(no_amount > Perbill::from_percent(self.max_dissenting) * total.clone())) &&
             (self.abstention == 0 || !(nu_amount > Perbill::from_percent(self.abstention) * total.clone()))
 
     }
     pub fn inherit_valid(&self,subparam: OrgRuleParam<Balance>) -> bool {
-        return subparam.minAffirmative >= self.minAffirmative
-            && subparam.maxDissenting <= self.maxDissenting
+        return subparam.min_affirmative >= self.min_affirmative
+            && subparam.max_dissenting <= self.max_dissenting
             && subparam.abstention <= self.abstention ;
     }
 }

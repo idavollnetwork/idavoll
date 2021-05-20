@@ -113,7 +113,7 @@ pub type OrgRuleParamOf<T> = OrgRuleParam<BalanceOf<T>>;
 decl_storage! {
 	trait Store for Module<T: Trait> as IdavollModule {
 		pub OrgCounter get(fn counter): OrgCount = 0;
-		pub OrgInfos get(fn OrgInfos): map hasher(blake2_128_concat) T::AccountId => Option<OrgInfoOf<T>>;
+		pub OrgInfos get(fn org_infos): map hasher(blake2_128_concat) T::AccountId => Option<OrgInfoOf<T>>;
         pub Proposals get(fn proposals): map hasher(blake2_128_concat) ProposalIdOf<T> => Option<ProposalOf<T>>;
 	}
 }
@@ -330,14 +330,14 @@ impl<T: Trait> Module<T>  {
 	}
 
 	// add a member into a organization by orgid
-	fn base_add_member_on_orgid(oid: T::AccountId,memberID: T::AccountId) -> dispatch::DispatchResult {
+	fn base_add_member_on_orgid(oid: T::AccountId,member_id: T::AccountId) -> dispatch::DispatchResult {
 		OrgInfos::<T>::try_mutate(oid,|infos| -> dispatch::DispatchResult {
 			match infos {
 				Some(org) => {match org.members
 					.iter()
-					.find(|&x| *x==memberID) {
+					.find(|&x| *x==member_id) {
 					None => {
-						org.members.push(memberID);
+						org.members.push(member_id);
 						Ok(())
 					},
 					_ => Ok(())
@@ -355,7 +355,7 @@ impl<T: Trait> Module<T>  {
 								 value: BalanceOf<T>, yesorno: bool) -> dispatch::DispatchResult {
 		Proposals::<T>::try_mutate(pid,|proposal| -> dispatch::DispatchResult {
 			if let Some(p) = proposal {
-				p.detail.vote(voter.clone(),value,yesorno)?;
+				p.detail.vote(voter.clone(),value,yesorno);
 				// *proposal = Some(p);
 			};
 			Ok(())
@@ -377,12 +377,12 @@ mod test {
 	use super::*;
 
 	use frame_support::{
-		codec::{Decode, Encode},impl_outer_origin,
+		codec::{Encode},impl_outer_origin,
 		impl_outer_dispatch, assert_ok, assert_noop, parameter_types, weights::Weight};
 	use sp_core::H256;
 	use sp_runtime::{Perbill, traits::{BlakeTwo256, IdentityLookup,Hash}, testing::Header,ModuleId};
 	use pallet_balances;
-	use organization::{OrgInfo, Proposal,ProposalDetailOf};
+	use organization::{OrgInfo, Proposal};
 	use rules::{OrgRuleParam};
 	use sp_std::{prelude::Vec, boxed::Box,collections::btree_map::BTreeMap};
 
@@ -408,7 +408,7 @@ mod test {
 	const OWNER: u128 = 88;
 	const RECEIVER: u128 = 7;
 	const ORGID: u128 = 1000;
-	const ORGID2: u128 = 2000;
+	// const ORGID2: u128 = 2000;
 
 	#[derive(Clone, Eq, PartialEq)]
 	pub struct Test;
@@ -506,7 +506,7 @@ mod test {
 	fn make_transfer_proposal(value: u64) -> Vec<u8> {
 		Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value)).encode()
 	}
-	fn make_system_proposal(value: u64) -> Vec<u8> {
+	fn make_system_proposal(_value: u64) -> Vec<u8> {
 		Call::System(frame_system::Call::remark(vec![0; 1])).encode()
 	}
 	fn create_org() -> OrgInfoOf<Test> {
@@ -571,7 +571,7 @@ mod test {
 			assert_eq!(IdavollModule::is_member(IdavollModule::counter_2_orgid(0),&1),true);
 			assert_eq!(IdavollModule::is_member(IdavollModule::counter_2_orgid(0),&9),false);
 
-			for i in 0..100 {
+			for _i in 0..100 {
 				let org = create_org();
 				assert_ok!(IdavollModule::storage_new_organization(org.clone()));
 			}
@@ -648,7 +648,7 @@ mod test {
 	fn base_proposal_03_should_work() {
 		new_test_ext().execute_with(||{
 			// vote in the single proposal test(the proposal was a fake proposal)
-			let asset_id = IdavollModule::create_new_token(100,100);
+			let _asset_id = IdavollModule::create_new_token(100,100);
 			let mut proposal = create_proposal(100,10,OWNER);
 
 			// passed by more than 60% 'Yes' votes and less than 5% 'no' votes
@@ -724,8 +724,8 @@ mod test {
 	fn base_rule_param_should_work() {
 		new_test_ext().execute_with(|| {
 			let mut param = OrgRuleParam::default();
-			// passed by 'minAffirmative' ,'maxDissenting' and 'abstention'
-			param.minAffirmative = 70;param.maxDissenting = 0;param.abstention = 0;
+			// passed by 'min_affirmative' ,'max_dissenting' and 'abstention'
+			param.min_affirmative = 70;param.max_dissenting = 0;param.abstention = 0;
 			assert_eq!(param.is_pass(69 as u64,0,0,100),false);
 			assert_eq!(param.is_pass(70 as u64,0,0,100),false);
 			assert_eq!(param.is_pass(71 as u64,0,0,100),true);
@@ -733,7 +733,7 @@ mod test {
 			assert_eq!(param.is_pass(70 as u64,10,10,100),false);
 			assert_eq!(param.is_pass(71 as u64,10,10,100),true);
 
-			param.minAffirmative = 70;param.maxDissenting = 10;param.abstention = 0;
+			param.min_affirmative = 70;param.max_dissenting = 10;param.abstention = 0;
 			assert_eq!(param.is_pass(69 as u64,10,1,100),false);
 			assert_eq!(param.is_pass(70 as u64,10,1,100),false);
 			assert_eq!(param.is_pass(71 as u64,10,1,100),true);
@@ -745,7 +745,7 @@ mod test {
 			assert_eq!(param.is_pass(71 as u64,9,10,100),true);
 			assert_eq!(param.is_pass(71 as u64,10,10,100),true);
 
-			param.minAffirmative = 70;param.maxDissenting = 10;param.abstention = 3;
+			param.min_affirmative = 70;param.max_dissenting = 10;param.abstention = 3;
 			assert_eq!(param.is_pass(69 as u64,10,2,100),false);
 			assert_eq!(param.is_pass(70 as u64,10,3,100),false);
 			assert_eq!(param.is_pass(71 as u64,10,4,100),false);
@@ -754,24 +754,24 @@ mod test {
 			assert_eq!(param.is_pass(71 as u64,9,4,100),false);
 
 			// sub param
-			param.minAffirmative = 70;param.maxDissenting = 10;param.abstention = 3;
+			param.min_affirmative = 70;param.max_dissenting = 10;param.abstention = 3;
 			let mut sub = OrgRuleParam::default();
-			sub.minAffirmative = 70;sub.maxDissenting = 10;sub.abstention = 3;
+			sub.min_affirmative = 70;sub.max_dissenting = 10;sub.abstention = 3;
 			assert_eq!(param.inherit_valid(sub.clone()),true);  // same of the param
 
-			sub.minAffirmative = 69;sub.maxDissenting = 10;sub.abstention = 3;
+			sub.min_affirmative = 69;sub.max_dissenting = 10;sub.abstention = 3;
 			assert_eq!(param.inherit_valid(sub.clone()),false);
-			sub.minAffirmative = 71;sub.maxDissenting = 10;sub.abstention = 3;
+			sub.min_affirmative = 71;sub.max_dissenting = 10;sub.abstention = 3;
 			assert_eq!(param.inherit_valid(sub.clone()),true);
 
-			sub.minAffirmative = 70;sub.maxDissenting = 9;sub.abstention = 3;
+			sub.min_affirmative = 70;sub.max_dissenting = 9;sub.abstention = 3;
 			assert_eq!(param.inherit_valid(sub.clone()),true);
-			sub.minAffirmative = 70;sub.maxDissenting = 11;sub.abstention = 3;
+			sub.min_affirmative = 70;sub.max_dissenting = 11;sub.abstention = 3;
 			assert_eq!(param.inherit_valid(sub.clone()),false);
 
-			sub.minAffirmative = 70;sub.maxDissenting = 10;sub.abstention = 2;
+			sub.min_affirmative = 70;sub.max_dissenting = 10;sub.abstention = 2;
 			assert_eq!(param.inherit_valid(sub.clone()),true);
-			sub.minAffirmative = 70;sub.maxDissenting = 10;sub.abstention = 4;
+			sub.min_affirmative = 70;sub.max_dissenting = 10;sub.abstention = 4;
 			assert_eq!(param.inherit_valid(sub.clone()),false);
 		});
 	}

@@ -29,8 +29,8 @@
   },
 
   "OrgRuleParam": {
-    "minAffirmative": "u32",
-    "maxDissenting": "u32",
+    "min_affirmative": "u32",
+    "max_dissenting": "u32",
     "abstention": "u32"
   },
   "OrgRuleParamOf": "OrgRuleParam",
