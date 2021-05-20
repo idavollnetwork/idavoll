@@ -64,7 +64,9 @@ impl<T: Trait> Module<T> {
             let clone_proposal = proposal.clone();
             Self::remove_proposal_by_id(pid.clone());
             clone_proposal.detail.votes.iter().for_each(|val|{
-                T::AssetHandle::unlock(aid,&val.0.clone(),val.1.0.clone());
+                match T::AssetHandle::unlock(aid,&val.0.clone(),val.1.0.clone()) {
+                    _ => return,
+                }
             });
             Self::deposit_event(RawEvent::ProposalPassed(pid));
         }

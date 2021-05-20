@@ -3,7 +3,9 @@
 // 			Proposal,ProposalDetail};
 use super::*;
 use crate as idavoll;
-use frame_support::{impl_outer_origin,impl_outer_dispatch, assert_ok, assert_noop, parameter_types, weights::Weight};
+use frame_support::{
+	codec::{Decode, Encode},impl_outer_origin,impl_outer_dispatch,
+	assert_ok, assert_noop, parameter_types, weights::Weight};
 use sp_core::H256;
 use sp_runtime::{Perbill, traits::{BlakeTwo256, IdentityLookup,Hash}, testing::Header,ModuleId};
 use pallet_balances;
@@ -155,7 +157,7 @@ pub fn create_new_organization(creator: u128,total: u64) -> u128 {
 	let c = IdavollModule::counter_of();
 	match IdavollModule::create_origanization(RawOrigin::Signed(creator).into(),total,info) {
 		Ok(val) => {
-			IdavollModule::counter2Orgid(c)
+			IdavollModule::counter_2_orgid(c)
 		},
 		Err(e) => u128::MAX,
 	}
