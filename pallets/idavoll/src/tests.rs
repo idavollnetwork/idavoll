@@ -81,7 +81,7 @@ fn it_works_for_first_dao() {
 		// vote to transfer the vault
 		// make the proposal with the proposal id
 		let call = make_transfer_proposal(10);
-		let mut tmp_proposal = create_proposal_without_storage(org_id,5,call_to_vec(call.clone()));
+		let tmp_proposal = create_proposal_without_storage(org_id,5,call_to_vec(call.clone()));
 		let proposal_id = IdavollModule::make_proposal_id(&tmp_proposal.clone());
 
 		assert_ok!(IdavollModule::create_proposal(RawOrigin::Signed(OWNER.clone()).into(),c,
@@ -126,7 +126,7 @@ fn it_works_for_5_members_vote_pass() {
 		// vote to transfer the vault
 		// make the proposal with the proposal id
 		let call = make_transfer_proposal(30);
-		let mut tmp_proposal = create_proposal_without_storage(org_id,5,call_to_vec(call.clone()));
+		let tmp_proposal = create_proposal_without_storage(org_id,5,call_to_vec(call.clone()));
 		let proposal_id = IdavollModule::make_proposal_id(&tmp_proposal.clone());
 
 		assert_ok!(IdavollModule::create_proposal(RawOrigin::Signed(OWNER.clone()).into(),c,
@@ -178,7 +178,7 @@ fn it_works_for_5_members_vote_fail() {
 		// vote to transfer the vault
 		// make the proposal with the proposal id
 		let call = make_transfer_proposal(30);
-		let mut tmp_proposal = create_proposal_without_storage(org_id,5,call_to_vec(call.clone()));
+		let tmp_proposal = create_proposal_without_storage(org_id,5,call_to_vec(call.clone()));
 		let proposal_id = IdavollModule::make_proposal_id(&tmp_proposal.clone());
 
 		assert_ok!(IdavollModule::create_proposal(RawOrigin::Signed(OWNER.clone()).into(),c,

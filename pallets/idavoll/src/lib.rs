@@ -187,7 +187,7 @@ decl_module! {
 			let owner = ensure_signed(origin)?;
 			let asset_id = Self::create_new_token(owner.clone(),total);
 			let mut info_clone = info.clone();
-			info_clone.add_member(owner.clone());
+			info_clone.add_member(owner.clone())?;
 			info_clone.set_asset_id(asset_id.clone());
 			Self::storage_new_organization(info_clone.clone())
 		}
@@ -265,7 +265,7 @@ decl_module! {
 impl<T: Trait> Module<T>  {
 
 	/// be accountid of organization id for orginfos in the storage
-	pub fn counter2Orgid(c: OrgCount) -> T::AccountId {
+	pub fn counter_2_orgid(c: OrgCount) -> T::AccountId {
 		T::ModuleId::get().into_sub_account(c)
 	}
 	pub fn counter_of() -> OrgCount {
@@ -310,7 +310,7 @@ impl<T: Trait> Module<T>  {
 	fn storage_new_organization(oinfo: OrgInfoOf<T>) -> dispatch::DispatchResult {
 		let counter = OrgCounter::get();
 		let new_counter = counter.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-		let oid = Self::counter2Orgid(counter);
+		let oid = Self::counter_2_orgid(counter);
 
 		OrgInfos::<T>::insert(&oid, oinfo.clone());
 		Self::deposit_event(RawEvent::OrganizationCreated(oid, oinfo));
@@ -376,7 +376,9 @@ impl<T: Trait> Module<T>  {
 mod test {
 	use super::*;
 
-	use frame_support::{impl_outer_origin,impl_outer_dispatch, assert_ok, assert_noop, parameter_types, weights::Weight};
+	use frame_support::{
+		codec::{Decode, Encode},impl_outer_origin,
+		impl_outer_dispatch, assert_ok, assert_noop, parameter_types, weights::Weight};
 	use sp_core::H256;
 	use sp_runtime::{Perbill, traits::{BlakeTwo256, IdentityLookup,Hash}, testing::Header,ModuleId};
 	use pallet_balances;
@@ -542,16 +544,16 @@ mod test {
 	#[test]
 	fn base_orgid_function_should_work() {
 		new_test_ext().execute_with(|| {
-			assert_ne!(IdavollModule::counter2Orgid(100),IdavollModule::counter2Orgid(101));
-			println!("{}",IdavollModule::counter2Orgid(0));
-			println!("{}",IdavollModule::counter2Orgid(1));
-			println!("{}",IdavollModule::counter2Orgid(2));
-			println!("{}",IdavollModule::counter2Orgid(4));
-			println!("{}",IdavollModule::counter2Orgid(5));
-			println!("{}",IdavollModule::counter2Orgid(6));
-			println!("{}",IdavollModule::counter2Orgid(7));
-			println!("{}",IdavollModule::counter2Orgid(8));
-			println!("{}",IdavollModule::counter2Orgid(9));
+			assert_ne!(IdavollModule::counter_2_orgid(100),IdavollModule::counter_2_orgid(101));
+			println!("{}",IdavollModule::counter_2_orgid(0));
+			println!("{}",IdavollModule::counter_2_orgid(1));
+			println!("{}",IdavollModule::counter_2_orgid(2));
+			println!("{}",IdavollModule::counter_2_orgid(4));
+			println!("{}",IdavollModule::counter_2_orgid(5));
+			println!("{}",IdavollModule::counter_2_orgid(6));
+			println!("{}",IdavollModule::counter_2_orgid(7));
+			println!("{}",IdavollModule::counter_2_orgid(8));
+			println!("{}",IdavollModule::counter_2_orgid(9));
 		});
 	}
 
@@ -563,11 +565,11 @@ mod test {
 			assert_eq!(asset_id,0);
 			org.set_asset_id(asset_id.clone());
 			assert_ok!(IdavollModule::storage_new_organization(org.clone()));
-			assert_eq!(IdavollModule::get_orginfo_by_id(IdavollModule::counter2Orgid(0)),Ok(org.clone()));
+			assert_eq!(IdavollModule::get_orginfo_by_id(IdavollModule::counter_2_orgid(0)),Ok(org.clone()));
 
-			assert_eq!(IdavollModule::is_member(IdavollModule::counter2Orgid(0),&OWNER),true);
-			assert_eq!(IdavollModule::is_member(IdavollModule::counter2Orgid(0),&1),true);
-			assert_eq!(IdavollModule::is_member(IdavollModule::counter2Orgid(0),&9),false);
+			assert_eq!(IdavollModule::is_member(IdavollModule::counter_2_orgid(0),&OWNER),true);
+			assert_eq!(IdavollModule::is_member(IdavollModule::counter_2_orgid(0),&1),true);
+			assert_eq!(IdavollModule::is_member(IdavollModule::counter_2_orgid(0),&9),false);
 
 			for i in 0..100 {
 				let org = create_org();
@@ -585,7 +587,7 @@ mod test {
 			let asset_id = IdavollModule::create_new_token(OWNER.clone(),100);
 			assert_eq!(asset_id,0);
 			org.set_asset_id(asset_id.clone());
-			let org_id = IdavollModule::counter2Orgid(0);
+			let org_id = IdavollModule::counter_2_orgid(0);
 			assert_ok!(IdavollModule::storage_new_organization(org.clone()));
 			assert_eq!(IdavollModule::get_orginfo_by_id(org_id),Ok(org.clone()));
 			assert_eq!(IdavollModule::get_count_members(org_id),4);
@@ -603,7 +605,7 @@ mod test {
 	fn base_proposal_01_should_work() {
 
 		new_test_ext().execute_with(|| {
-			let org_id = IdavollModule::counter2Orgid(0);
+			let org_id = IdavollModule::counter_2_orgid(0);
 			let proposal = create_proposal(org_id,20,OWNER);
 			assert_ok!(IdavollModule::base_create_proposal(org_id,proposal.clone()));
 			// storage proposal repeat
@@ -625,7 +627,7 @@ mod test {
 		new_test_ext().execute_with(|| {
 			set_block_number(0);
 			for i in 0..10 {
-				let org_id = IdavollModule::counter2Orgid(i);
+				let org_id = IdavollModule::counter_2_orgid(i);
 				let proposal = create_proposal(org_id,i as u64 * 100,OWNER);
 				assert_ok!(IdavollModule::base_create_proposal(org_id,proposal.clone()));
 				let proposal_id = IdavollModule::make_proposal_id(&proposal.clone());

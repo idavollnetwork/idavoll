@@ -159,10 +159,7 @@ impl<
         self.members.sort();
     }
     pub fn is_member(&self,mid: AccountId) -> bool {
-        match self.members.iter().find(|&x| mid.eq(&x)) {
-            Some(v) => true,
-            _ =>   false,
-        }
+        self.members.iter().find(|&x| mid.eq(&x)).is_some()
     }
     pub fn get_asset_id(&self) -> AssetId {
         self.asset.id()
@@ -229,7 +226,7 @@ impl<T: Trait> Module<T>  {
             Ok(org) => {
                 org.counts()
             },
-            Err(e) => 0,
+            Err(_) => 0,
         }
     }
 
@@ -250,7 +247,7 @@ impl<T: Trait> Module<T>  {
         let total_balance = Self::get_total_token_by_oid(proposal.org);
         match total_balance {
             Ok(balance) => proposal.detail.pass(balance),
-            Err(e) => false,
+            Err(_) => false,
         }
     }
 
@@ -258,7 +255,7 @@ impl<T: Trait> Module<T>  {
         T::Finance::reserve_to_org(oid.clone(),who.clone(),value)
     }
     pub fn on_reserve_to_vault(id: u32,who: T::AccountId,value: T::Balance) -> DispatchResult {
-        let oid = Self::counter2Orgid(id);
+        let oid = Self::counter_2_orgid(id);
         // make sure the oid was exist
         Self::get_orginfo_by_id(oid.clone())?;
         Self::reserve_to_vault(oid,who.clone(),value)
@@ -266,7 +263,7 @@ impl<T: Trait> Module<T>  {
 
     pub fn on_create_proposal(id:u32,who: T::AccountId,expire: T::BlockNumber,sub_param: OrgRuleParamOf<T>
                               ,call: Box<<T as Trait>::Call>) ->DispatchResult {
-        let oid = Self::counter2Orgid(id);
+        let oid = Self::counter_2_orgid(id);
         let org = Self::get_orginfo_by_id(oid.clone())?;
         if !org.param.inherit_valid(sub_param.clone()) {
             return Err(Error::<T>::WrongRuleParam.into());
@@ -284,8 +281,8 @@ impl<T: Trait> Module<T>  {
         Self::vote_on_proposal(proposal.org,pid,who.clone(),value,yesorno,cur)
     }
     pub fn on_add_member(owner: T::AccountId,who: T::AccountId,id: u32) -> dispatch::DispatchResult {
-        let oid = Self::counter2Orgid(id);
-        let org = Self::get_orginfo_by_id(oid.clone())?;
+        let oid = Self::counter_2_orgid(id);
+        // let org = Self::get_orginfo_by_id(oid.clone())?;
         ensure!(Self::is_member(oid.clone(),&owner),Error::<T>::NotMemberInOrg);
         ensure!(!Self::is_member(oid.clone(),&who),Error::<T>::MemberDuplicate);
         Self::base_add_member_on_orgid(oid.clone(),who.clone())

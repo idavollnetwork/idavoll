@@ -30,10 +30,6 @@ use sp_std::{cmp::PartialOrd, marker};
 use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 
-pub const LengthLimit01: i32 = 32;
-pub const MaxRuleNumber: u32 = 10_000;
-
-
 
 
 pub trait BaseRule {
