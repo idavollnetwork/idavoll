@@ -34,6 +34,12 @@ without launching it:
 ```sh
 make build
 ```
+or you and `cargo build` or `cargo build --release` to build it. and you can run `cargo test` to run the tests.
+```
+ cargo build 
+ or 
+ cargo test
+```
 
 ### Embedded Docs
 
@@ -78,7 +84,7 @@ If you want to see the multi-node consensus algorithm in action, refer to
 
 
 ## Usage
-A simple way to use IDOVALL-NETWORK to create and use DAO organization,you can run local node for use it with `./idavoll-node --dev --tmp --ws-external`, and use the [Polkadot JS UI](https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/explorer), you may need the [types](https://github.com/idavollnetwork/idavoll/blob/main/types.json) with the UI.then we can create a `DAO` organization and make it usefull.
+A simple way to use IDOVALL-NETWORK to create and use DAO organization,you can run local node for use it with `./target/release/idavoll-node --dev --tmp --ws-external`, and use the [Polkadot JS UI](https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/explorer), you may need the [types](https://github.com/idavollnetwork/idavoll/blob/main/types.json) with the UI.then we can create a `DAO` organization and make it usefull.
 
 ```
 1. create organization
