@@ -34,18 +34,18 @@ impl<T: Trait> Module<T> {
         if !Self::is_member(oid.clone(),&voter) {
             return Err(Error::<T>::NotMember.into());
         }
-        let oinfo = Self::get_orginfo_by_id(oid.clone())?;
+        let oinfo = Self::get_orginfo_by_id(oid)?;
         let aid = oinfo.get_asset_id();
         let proposal = Self::get_proposal_by_id(pid)?;
         if proposal.detail.is_expire(height) {
-            Self::try_close_proposal(aid.clone(),pid.clone(),height)?;
+            Self::try_close_proposal(aid,pid,height)?;
             return Err(Error::<T>::ProposalExpired.into());
         }
         // lock the voter's balance
-        T::AssetHandle::lock(aid.clone(),&voter.clone(),value)?;
+        T::AssetHandle::lock(aid,&voter,value)?;
         Self::base_vote_on_proposal(pid,voter,value,yesorno)?;
         // check the proposal can closed
-        Self::try_close_proposal(aid.clone(),pid.clone(),height)
+        Self::try_close_proposal(aid,pid,height)
     }
     /// close the proposal when the proposal was expire or passed.
     /// it will auto unlocked the voter's asset
@@ -54,14 +54,13 @@ impl<T: Trait> Module<T> {
         let is_expire = proposal.detail.is_expire(height);
         let is_pass = Self::is_pass(proposal.clone());
         if is_pass && !is_expire {
-            Self::base_call_dispatch(pid.clone(),proposal.clone())?;
+            Self::base_call_dispatch(pid,proposal.clone())?;
         }
         if is_expire || is_pass {
-            let clone_proposal = proposal.clone();
-            Self::remove_proposal_by_id(pid.clone());
-            clone_proposal.detail.votes.iter().for_each(|val|{
-                match T::AssetHandle::unlock(aid,&val.0.clone(),val.1.0.clone()) {
-                    _ => return,
+            Self::remove_proposal_by_id(pid);
+            proposal.detail.votes.iter().for_each(|val|{
+                match T::AssetHandle::unlock(aid,&val.0.clone(),val.1.0) {
+                    _ => {},
                 }
             });
             if is_expire {
@@ -79,6 +78,6 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn handle_transfer_by_decision(oid: T::AccountId,to: T::AccountId,value: T::Balance) -> DispatchResult {
-        T::Finance::transfer_by_vault(oid.clone(),to.clone(),value)
+        T::Finance::transfer_by_vault(oid,to,value)
     }
 }

@@ -96,7 +96,7 @@ impl<T: Trait> BaseToken<T::AccountId> for Module<T> {
     fn lock_balance_of(aid: Self::AssetId, who: &T::AccountId) -> Self::Balance {
         let all = Self::total_balance(aid,who);
         let free = Self::free_balance(aid,who);
-        return all.saturating_sub(free)
+        all.saturating_sub(free)
     }
     /// The total balance of a given account.
     fn total_balance_of(aid: Self::AssetId, who: &T::AccountId) -> Self::Balance {

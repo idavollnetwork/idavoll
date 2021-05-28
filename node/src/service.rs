@@ -63,7 +63,7 @@ pub fn new_partial(config: &Configuration) -> Result<sc_service::PartialComponen
 	let import_queue = sc_consensus_aura::import_queue::<_, _, _, AuraPair, _, _>(
 		sc_consensus_aura::slot_duration(&*client)?,
 		aura_block_import.clone(),
-		Some(Box::new(grandpa_block_import.clone())),
+		Some(Box::new(grandpa_block_import)),
 		None,
 		client.clone(),
 		inherent_data_providers.clone(),
@@ -100,7 +100,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 			on_demand: None,
 			block_announce_validator_builder: None,
 			finality_proof_request_builder: None,
-			finality_proof_provider: Some(finality_proof_provider.clone()),
+			finality_proof_provider: Some(finality_proof_provider),
 		})?;
 
 	if config.offchain_worker.enabled {

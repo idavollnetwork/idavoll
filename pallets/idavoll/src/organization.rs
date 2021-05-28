@@ -60,43 +60,43 @@ impl<AccountId: Ord + Clone,
     Balance: Member + Parameter + AtLeast32BitUnsigned + Copy + Default,
     BlockNumber: Eq + PartialOrd + Clone,
     > ProposalDetail<AccountId, Balance, BlockNumber> {
-    pub fn new(creator: AccountId,end: BlockNumber,subparam: OrgRuleParam<Balance>) -> Self {
+    pub fn new(who: AccountId,end: BlockNumber,subparam: OrgRuleParam<Balance>) -> Self {
         ProposalDetail{
             votes: BTreeMap::<AccountId, (Balance, bool)>::new(),
-            creator: creator.clone(),
+            creator: who,
             end_dt: end,
-            sub_param: subparam.clone(),
+            sub_param: subparam,
         }
     }
     pub fn vote(&mut self,voter: AccountId,value: Balance,yesorno: bool) {
-        if let Some(val) = self.votes.get_mut(&voter.clone()) {
+        if let Some(val) = self.votes.get_mut(&voter) {
             if val.1 == yesorno {
-                *val = (value.saturating_add(val.0.clone()),yesorno);
+                *val = (value.saturating_add(val.0),yesorno);
             } else {
-                *val = (value.saturating_add(val.0.clone()),val.1);
+                *val = (value.saturating_add(val.0),val.1);
             }
         } else {
-            self.votes.insert(voter.clone(),(value,yesorno));
+            self.votes.insert(voter,(value,yesorno));
         }
     }
     pub fn summary(&self) -> (Balance,Balance) {
         let (mut yes_balance,mut no_balance) = (Balance::default(),Balance::default());
         self.votes.iter().for_each(|val|{
             if val.1.1 {
-                yes_balance = yes_balance.saturating_add(val.1.0.clone());
+                yes_balance = yes_balance.saturating_add(val.1.0);
             } else {
-                no_balance = no_balance.saturating_add(val.1.0.clone());
+                no_balance = no_balance.saturating_add(val.1.0);
             }
         });
-        return (yes_balance.clone(),no_balance.clone())
+        (yes_balance,no_balance)
     }
     pub fn is_expire(&self,current: BlockNumber) -> bool {
-        return  current > self.end_dt
+        current > self.end_dt
     }
     pub fn pass(&self,total_balance: Balance) -> bool {
         let (yes_balance,no_balance) = self.summary();
         let nu_balance = Zero::zero();
-        return self.sub_param.is_pass(yes_balance,no_balance,nu_balance,total_balance)
+        self.sub_param.is_pass(yes_balance,no_balance,nu_balance,total_balance)
     }
     pub fn creator(&self) -> AccountId {
         self.creator.clone()
@@ -167,7 +167,7 @@ impl<
     }
     pub fn add_member(&mut self, member: AccountId) -> DispatchResult {
         if !self.is_member(member.clone()) {
-            self.members.push(member.clone());
+            self.members.push(member);
         }
         Ok(())
     }
@@ -198,11 +198,11 @@ impl<
     Balance: Member + Parameter + AtLeast32BitUnsigned + Copy + Default,
     BlockNumber: Eq + PartialOrd + Clone,
 > Proposal<Call, AccountId, Balance, BlockNumber> {
-    pub fn new(id: AccountId,calldata: Call,detail: ProposalDetail<AccountId, Balance, BlockNumber>) -> Self {
+    pub fn new(id: AccountId,calldata: Call,info: ProposalDetail<AccountId, Balance, BlockNumber>) -> Self {
         Self{
             org: id,
             call: calldata,
-            detail: detail,
+            detail: info,
         }
     }
     pub fn creator(&self) -> AccountId {
@@ -220,7 +220,7 @@ impl<T: Trait> Module<T>  {
         T::Hashing::hash_of(&[proposal.encode()])
     }
     pub fn get_count_members(oid: T::AccountId) -> u32 {
-        match Self::get_orginfo_by_id(oid.clone()) {
+        match Self::get_orginfo_by_id(oid) {
             Ok(org) => {
                 org.counts()
             },
@@ -238,7 +238,7 @@ impl<T: Trait> Module<T>  {
         Ok(T::AssetHandle::total(org.get_asset_id()))
     }
     pub fn get_local_balance(id: T::AccountId) -> Result<T::Balance,DispatchError> {
-        T::Finance::balance_of(id.clone())
+        T::Finance::balance_of(id)
     }
 
     pub fn is_pass(proposal: ProposalOf<T>) -> bool {
@@ -250,13 +250,13 @@ impl<T: Trait> Module<T>  {
     }
 
     pub fn reserve_to_vault(oid: T::AccountId,who: T::AccountId,value: T::Balance) -> DispatchResult {
-        T::Finance::reserve_to_org(oid.clone(),who.clone(),value)
+        T::Finance::reserve_to_org(oid,who,value)
     }
     pub fn on_reserve_to_vault(id: u32,who: T::AccountId,value: T::Balance) -> DispatchResult {
         let oid = Self::counter_2_orgid(id);
         // make sure the oid was exist
         Self::get_orginfo_by_id(oid.clone())?;
-        Self::reserve_to_vault(oid,who.clone(),value)
+        Self::reserve_to_vault(oid,who,value)
     }
 
     pub fn on_create_proposal(id:u32,who: T::AccountId,expire: T::BlockNumber,sub_param: OrgRuleParamOf<T>
@@ -270,20 +270,20 @@ impl<T: Trait> Module<T>  {
         let proposal = Proposal {
             org:    oid.clone(),
             call: call.encode(),
-            detail: ProposalDetail::new(who.clone(),expire,sub_param.clone()),
+            detail: ProposalDetail::new(who,expire,sub_param),
         };
-        Self::base_create_proposal(oid.clone(),proposal)
+        Self::base_create_proposal(oid,proposal)
     }
     pub fn on_vote_proposal(pid: ProposalIdOf<T>,who: T::AccountId,value: T::Balance,yesorno: bool,cur: T::BlockNumber) -> DispatchResult {
         let proposal = Self::get_proposal_by_id(pid)?;
-        Self::vote_on_proposal(proposal.org,pid,who.clone(),value,yesorno,cur)
+        Self::vote_on_proposal(proposal.org,pid,who,value,yesorno,cur)
     }
     pub fn on_add_member(owner: T::AccountId,who: T::AccountId,id: u32) -> dispatch::DispatchResult {
         let oid = Self::counter_2_orgid(id);
         // let org = Self::get_orginfo_by_id(oid.clone())?;
         ensure!(Self::is_member(oid.clone(),&owner),Error::<T>::NotMemberInOrg);
         ensure!(!Self::is_member(oid.clone(),&who),Error::<T>::MemberDuplicate);
-        Self::base_add_member_on_orgid(oid.clone(),who.clone())
+        Self::base_add_member_on_orgid(oid,who)
     }
 
 }

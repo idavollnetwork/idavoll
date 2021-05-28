@@ -287,7 +287,7 @@ impl<T: Trait> Module<T> {
 
     pub fn vault_balance_of(oid: T::AccountId) -> Result<LocalBalance<T>, dispatch::DispatchError> {
         if Finances::<T>::contains_key(oid.clone()) {
-            Ok(<Finances<T>>::get(oid.clone()))
+            Ok(<Finances<T>>::get(oid))
         }else {
             Err(Error::<T>::UnknownOwnerID.into())
         }
@@ -299,8 +299,8 @@ impl<T: Trait> Module<T> {
         let vault_account = Self::account_id();
         T::Currency::transfer(&who,&vault_account,value,AllowDeath)?;
 
-        Finances::<T>::mutate(oid.clone(), |a| -> dispatch::DispatchResult {
-            *a = a.saturating_add(value.clone());
+        Finances::<T>::mutate(oid, |a| -> dispatch::DispatchResult {
+            *a = a.saturating_add(value);
             Ok(())
         })
     }

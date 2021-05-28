@@ -22,29 +22,29 @@ use frame_support::weights::{constants::RocksDbWeight as DbWeight, Weight};
 
 impl crate::WeightInfo for () {
     fn create_origanization(b: u32) -> Weight {
-        (100_000_000 as Weight)
-            .saturating_add((10_000_000 as Weight).saturating_mul(b as Weight))
-            .saturating_add(DbWeight::get().reads(1 as Weight))
-            .saturating_add(DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-            .saturating_add(DbWeight::get().writes(1 as Weight))
-            .saturating_add(DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
+        (100_000_000_u64)
+            .saturating_add((10_000_000_u64).saturating_mul(b as Weight))
+            .saturating_add(DbWeight::get().reads(1_u64))
+            .saturating_add(DbWeight::get().reads((1_u64).saturating_mul(b as Weight)))
+            .saturating_add(DbWeight::get().writes(1_u64))
+            .saturating_add(DbWeight::get().writes((1_u64).saturating_mul(b as Weight)))
     }
     fn deposit_to_origanization() -> Weight {
-        (100_000_000 as Weight)
+        (100_000_000_u64)
     }
     fn create_proposal() -> Weight {
-        (600_000_000 as Weight)
-            .saturating_add(DbWeight::get().reads(1 as Weight))
-            .saturating_add(DbWeight::get().writes(1 as Weight))
+        (600_000_000_u64)
+            .saturating_add(DbWeight::get().reads(1_u64))
+            .saturating_add(DbWeight::get().writes(1_u64))
     }
     fn veto_proposal() -> Weight {
-        (200_000_000 as Weight)
-            .saturating_add(DbWeight::get().reads((100 as Weight).saturating_mul(10 as Weight)))
-            .saturating_add(DbWeight::get().writes((500 as Weight).saturating_mul(10 as Weight)))
+        (200_000_000_u64)
+            .saturating_add(DbWeight::get().reads((100_u64).saturating_mul(10_u64)))
+            .saturating_add(DbWeight::get().writes((500_u64).saturating_mul(10_u64)))
     }
     fn add_member_by_onwer() -> Weight {
-        (200_000_000 as Weight)
-            .saturating_add(DbWeight::get().reads((100 as Weight).saturating_mul(10 as Weight)))
-            .saturating_add(DbWeight::get().writes((500 as Weight).saturating_mul(10 as Weight)))
+        (200_000_000_u64)
+            .saturating_add(DbWeight::get().reads((100_u64).saturating_mul(10_u64)))
+            .saturating_add(DbWeight::get().writes((500_u64).saturating_mul(10_u64)))
     }
 }

@@ -185,10 +185,10 @@ decl_module! {
 		pub fn create_origanization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let asset_id = Self::create_new_token(owner.clone(),total);
-			let mut info_clone = info.clone();
-			info_clone.add_member(owner.clone())?;
-			info_clone.set_asset_id(asset_id.clone());
-			Self::storage_new_organization(info_clone.clone())
+			let mut info_clone = info;
+			info_clone.add_member(owner)?;
+			info_clone.set_asset_id(asset_id);
+			Self::storage_new_organization(info_clone)
 		}
 		/// reserve the local asset(idv) to organization's Vault, it used to assigned by the proposal
 		/// of call function
@@ -272,17 +272,15 @@ impl<T: Trait> Module<T>  {
 	}
 	/// get the count of the proposal in the storage
 	pub fn count_of_proposals() -> u32 {
-		let proposals = <Proposals<T>>::iter().map(|(v, _)| v).collect::<Vec<_>>();
-		proposals.len() as u32
+		<Proposals<T>>::iter().map(|(v, _)| v).count() as u32
 	}
 	/// get the count of the proposal in the storage
 	pub fn count_of_organizations() -> u32 {
-		let orgs = <OrgInfos<T>>::iter().map(|(v, _)| v).collect::<Vec<_>>();
-		orgs.len() as u32
+		<OrgInfos<T>>::iter().map(|(v, _)| v).count() as u32
 	}
 	pub fn get_orginfo_by_id(oid: T::AccountId) -> Result<OrgInfoOf<T>, dispatch::DispatchError> {
 		if OrgInfos::<T>::contains_key(oid.clone()) {
-			match <OrgInfos<T>>::get(oid.clone()) {
+			match <OrgInfos<T>>::get(oid) {
 				Some(val) => Ok(val),
 				None => Err(Error::<T>::OrganizationNotFound.into()),
 			}
@@ -292,7 +290,7 @@ impl<T: Trait> Module<T>  {
 	}
 	/// check the user belong to the organization
 	pub fn is_member(oid: T::AccountId,who: &T::AccountId) -> bool {
-		match <OrgInfos<T>>::get(oid.clone()) {
+		match <OrgInfos<T>>::get(oid) {
 			Some(val) => val.is_member(who.clone()),
 			None => false,
 		}
@@ -363,8 +361,8 @@ impl<T: Trait> Module<T>  {
 	}
 	fn base_call_dispatch(pid: ProposalIdOf<T>,proposal: ProposalOf<T>) -> dispatch::DispatchResult {
 		// remove the proposal from the storage by the proposal passed
-		let call = <T as Trait>::Call::decode(&mut &proposal.clone().call[..]).map_err(|_| Error::<T>::ProposalDecodeFailed)?;
-		let res = call.dispatch(frame_system::RawOrigin::Signed(proposal.clone().org).into());
+		let call = <T as Trait>::Call::decode(&mut &proposal.call[..]).map_err(|_| Error::<T>::ProposalDecodeFailed)?;
+		let res = call.dispatch(frame_system::RawOrigin::Signed(proposal.org).into());
 		Self::deposit_event(RawEvent::ProposalFinalized(pid, res.map(|_| ()).map_err(|e| e.error)));
 		Ok(())
 	}

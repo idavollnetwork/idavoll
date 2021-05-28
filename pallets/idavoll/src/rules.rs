@@ -65,9 +65,9 @@ where
 impl<Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned> OrgRuleParam<Balance> {
     pub fn default() -> Self {
         Self{
-            min_affirmative: 0 as u32,
-            max_dissenting: 0 as u32,
-            abstention: 0 as u32,
+            min_affirmative: 0_u32,
+            max_dissenting: 0_u32,
+            abstention: 0_u32,
             _phantom: marker::PhantomData,
         }
     }
@@ -83,13 +83,13 @@ impl<Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned> OrgRulePar
 
         (self.min_affirmative == 0 || yes_amount > Perbill::from_percent(self.min_affirmative) * total.clone()) &&
             (self.max_dissenting == 0 || !(no_amount > Perbill::from_percent(self.max_dissenting) * total.clone())) &&
-            (self.abstention == 0 || !(nu_amount > Perbill::from_percent(self.abstention) * total.clone()))
+            (self.abstention == 0 || !(nu_amount > Perbill::from_percent(self.abstention) * total))
 
     }
     pub fn inherit_valid(&self,subparam: OrgRuleParam<Balance>) -> bool {
-        return subparam.min_affirmative >= self.min_affirmative
+        subparam.min_affirmative >= self.min_affirmative
             && subparam.max_dissenting <= self.max_dissenting
-            && subparam.abstention <= self.abstention ;
+            && subparam.abstention <= self.abstention
     }
 }
 
