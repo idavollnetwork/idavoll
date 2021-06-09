@@ -185,10 +185,10 @@ decl_module! {
 		pub fn create_origanization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let asset_id = Self::create_new_token(owner.clone(),total);
-			let mut info_clone = info;
-			info_clone.add_member(owner)?;
-			info_clone.set_asset_id(asset_id);
-			Self::storage_new_organization(info_clone)
+			let mut info = info;
+			info.add_member(owner)?;
+			info.set_asset_id(asset_id);
+			Self::storage_new_organization(info)
 		}
 		/// reserve the local asset(idv) to organization's Vault, it used to assigned by the proposal
 		/// of call function
