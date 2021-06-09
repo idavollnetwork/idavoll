@@ -158,7 +158,6 @@ decl_error! {
 		ProposalDecodeFailed,
 		ProposalDuplicate,
 		ProposalExpired,
-		NotMember,
 		WrongRuleParam,
 	}
 }
