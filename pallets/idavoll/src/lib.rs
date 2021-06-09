@@ -126,9 +126,6 @@ decl_event!(
 	ProposalId = ProposalIdOf<T>,
 	OrgInfo = OrgInfoOf<T>,
 	{
-		/// Event documentation should end with an array that provides descriptive names for event
-		/// parameters. [something, who]
-		SomethingStored(u32, AccountId),
 		/// An organization was created with the following parameters. \[organizationId, details\]
         OrganizationCreated(AccountId, OrgInfo),
 		/// A proposal has been finalized with the following result. \[proposal id, result\]
@@ -145,8 +142,6 @@ decl_event!(
 // Errors inform users that something went wrong.
 decl_error! {
 	pub enum Error for Module<T: Trait> {
-		/// Error names should be descriptive.
-		NoneValue,
 		/// need the maximum number for the storage value for the fixed type.
 		StorageOverflow,
 		OrganizationNotFound,
