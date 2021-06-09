@@ -59,7 +59,7 @@ pub trait WeightInfo {
 	fn deposit_to_organization() -> Weight;
 	fn create_proposal() -> Weight;
 	fn veto_proposal() -> Weight;
-	fn add_member_by_onwer() -> Weight;
+	fn add_member_by_owner() -> Weight;
 }
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -223,8 +223,8 @@ decl_module! {
 		/// target: the new account
 		/// id: Ordinal number created by the organization，it mapped whit the organization id.
 		///
-		#[weight = T::WeightInfo::add_member_by_onwer()]
-		pub fn add_member_by_onwer(origin,target: <T::Lookup as StaticLookup>::Source,id: u32) -> dispatch::DispatchResult {
+		#[weight = T::WeightInfo::add_member_by_owner()]
+		pub fn add_member_by_owner(origin,target: <T::Lookup as StaticLookup>::Source,id: u32) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let who = T::Lookup::lookup(target)?;
 
