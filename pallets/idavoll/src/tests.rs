@@ -15,8 +15,8 @@
  */
 
 
-use crate::{mock::*};
-use frame_support::{assert_ok};
+use crate::{Error,mock::*};
+use frame_support::{assert_ok,assert_noop};
 use frame_system::RawOrigin;
 
 #[test]
@@ -79,6 +79,29 @@ fn it_works_for_add_member() {
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&2),10);
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&3),10);
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&4),10);
+	});
+}
+
+#[test]
+fn only_members_can_create_proposals() {
+	new_test_ext().execute_with(|| {
+		let c = IdavollModule::counter_of();
+		let org_id = create_new_organization(OWNER.clone(),100);
+		assert_ne!(org_id,u128::MAX);
+		assert_ok!(IdavollModule::deposit_to_organization(RawOrigin::Signed(A).into(),c,200));
+		assert_eq!(IdavollModule::get_count_members(org_id),1);
+		assert_eq!(IdavollAsset::vault_balance_of(org_id.clone()),Ok(200 as u64));
+
+		set_block_number(1);
+		assert_eq!(get_block_number(),1 as u64);
+		// vote to transfer the vault
+		// make the proposal with the proposal id
+		let call = make_transfer_proposal(10);
+		let tmp_proposal = create_proposal_without_storage(org_id,5,call_to_vec(call.clone()));
+		let proposal_id = IdavollModule::make_proposal_id(&tmp_proposal.clone());
+
+		assert_noop!(IdavollModule::create_proposal(RawOrigin::Signed(A.clone()).into(),c,
+		5,tmp_proposal.detail.sub_param.clone(),call),Error::<Test>::NotMemberInOrg);
 	});
 }
 
