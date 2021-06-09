@@ -55,8 +55,8 @@ use rules::{OrgRuleParam};
 
 
 pub trait WeightInfo {
-	fn create_origanization(m: u32) -> Weight;
-	fn deposit_to_origanization() -> Weight;
+	fn create_organization(m: u32) -> Weight;
+	fn deposit_to_organization() -> Weight;
 	fn create_proposal() -> Weight;
 	fn veto_proposal() -> Weight;
 	fn add_member_by_onwer() -> Weight;
@@ -181,8 +181,8 @@ decl_module! {
 		/// total: the total number of the new token
 		/// info: the details of the new organization
 		///
-		#[weight = T::WeightInfo::create_origanization(info.members.len() as u32)]
-		pub fn create_origanization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
+		#[weight = T::WeightInfo::create_organization(info.members.len() as u32)]
+		pub fn create_organization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let asset_id = Self::create_new_token(owner.clone(),total);
 			let mut info = info;
@@ -196,8 +196,8 @@ decl_module! {
 		/// id: Ordinal number created by the organization，it mapped whit the organization id.
 		/// value: the amount of the local asset(IDV)
 		///
-		#[weight = T::WeightInfo::deposit_to_origanization()]
-		pub fn deposit_to_origanization(origin,id: u32,value: T::Balance) -> dispatch::DispatchResult {
+		#[weight = T::WeightInfo::deposit_to_organization()]
+		pub fn deposit_to_organization(origin,id: u32,value: T::Balance) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::on_reserve_to_vault(id,who,value)
 		}

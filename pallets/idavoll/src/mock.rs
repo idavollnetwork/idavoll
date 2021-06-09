@@ -170,7 +170,7 @@ pub fn create_proposal_without_storage(id: u128,expire: u64,call: Vec<u8>) -> Pr
 pub fn create_new_organization(creator: u128,total: u64) -> u128 {
 	let info = create_org(creator);
 	let c = IdavollModule::counter_of();
-	match IdavollModule::create_origanization(RawOrigin::Signed(creator).into(),total,info) {
+	match IdavollModule::create_organization(RawOrigin::Signed(creator).into(),total,info) {
 		Ok(_val) => {
 			IdavollModule::counter_2_orgid(c)
 		},

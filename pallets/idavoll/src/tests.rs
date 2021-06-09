@@ -29,7 +29,7 @@ fn it_works_for_create_organization() {
 			assert_ne!(org_id,u128::MAX);
 			let asset_id = IdavollModule::get_token_id_by_oid(org_id.clone()).unwrap();
 			assert_eq!(IdavollModule::get_total_token_by_oid(org_id.clone()),Ok(100*i as u64));
-			assert_ok!(IdavollModule::deposit_to_origanization(RawOrigin::Signed(A).into(),c,10+i as u64));
+			assert_ok!(IdavollModule::deposit_to_organization(RawOrigin::Signed(A).into(),c,10+i as u64));
 			assert_eq!(IdavollModule::get_count_members(org_id),1);
 			assert_eq!(IdavollAsset::vault_balance_of(org_id.clone()),Ok(10+i as u64));
 			assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&i),100*i as u64);
@@ -46,7 +46,7 @@ fn it_works_for_add_member() {
 		assert_ne!(org_id,u128::MAX);
 		let asset_id = IdavollModule::get_token_id_by_oid(org_id.clone()).unwrap();
 		assert_eq!(IdavollModule::get_total_token_by_oid(org_id.clone()),Ok(100));
-		assert_ok!(IdavollModule::deposit_to_origanization(RawOrigin::Signed(A).into(),c,10));
+		assert_ok!(IdavollModule::deposit_to_organization(RawOrigin::Signed(A).into(),c,10));
 		assert_eq!(IdavollModule::get_count_members(org_id),1);
 		assert_eq!(IdavollAsset::vault_balance_of(org_id.clone()),Ok(10));
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&OWNER.clone()),100);
@@ -88,7 +88,7 @@ fn it_works_for_first_dao() {
 		let c = IdavollModule::counter_of();
 		let org_id = create_new_organization(OWNER.clone(),100);
 		assert_ne!(org_id,u128::MAX);
-		assert_ok!(IdavollModule::deposit_to_origanization(RawOrigin::Signed(A).into(),c,200));
+		assert_ok!(IdavollModule::deposit_to_organization(RawOrigin::Signed(A).into(),c,200));
 		assert_eq!(IdavollModule::get_count_members(org_id),1);
 		assert_eq!(IdavollAsset::vault_balance_of(org_id.clone()),Ok(200 as u64));
 
@@ -120,7 +120,7 @@ fn it_works_for_dao_of_token_balance_change() {
 		let c = IdavollModule::counter_of();
 		let org_id = create_new_organization(OWNER.clone(),100);
 		assert_ne!(org_id,u128::MAX);
-		assert_ok!(IdavollModule::deposit_to_origanization(RawOrigin::Signed(A).into(),c,200));
+		assert_ok!(IdavollModule::deposit_to_organization(RawOrigin::Signed(A).into(),c,200));
 		assert_eq!(IdavollModule::get_count_members(org_id),1);
 		assert_eq!(IdavollAsset::vault_balance_of(org_id.clone()),Ok(200 as u64));
 
@@ -177,7 +177,7 @@ fn it_works_for_5_members_vote_pass() {
 		let org_id = create_new_organization(OWNER.clone(),100);
 		let asset_id = IdavollModule::get_token_id_by_oid(org_id.clone()).unwrap();
 		assert_ne!(org_id,u128::MAX);
-		assert_ok!(IdavollModule::deposit_to_origanization(RawOrigin::Signed(A).into(),c,200));
+		assert_ok!(IdavollModule::deposit_to_organization(RawOrigin::Signed(A).into(),c,200));
 		assert_eq!(IdavollModule::get_count_members(org_id),1);
 		assert_eq!(IdavollAsset::vault_balance_of(org_id),Ok(200 as u64));
 		// add 4 members
@@ -229,7 +229,7 @@ fn it_works_for_5_members_vote_fail() {
 		let org_id = create_new_organization(OWNER.clone(),100);
 		let asset_id = IdavollModule::get_token_id_by_oid(org_id.clone()).unwrap();
 		assert_ne!(org_id,u128::MAX);
-		assert_ok!(IdavollModule::deposit_to_origanization(RawOrigin::Signed(A).into(),c,200));
+		assert_ok!(IdavollModule::deposit_to_organization(RawOrigin::Signed(A).into(),c,200));
 		assert_eq!(IdavollModule::get_count_members(org_id),1);
 		assert_eq!(IdavollAsset::vault_balance_of(org_id),Ok(200 as u64));
 		// add 4 members

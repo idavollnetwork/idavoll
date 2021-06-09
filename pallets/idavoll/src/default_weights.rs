@@ -21,7 +21,7 @@
 use frame_support::weights::{constants::RocksDbWeight as DbWeight, Weight};
 
 impl crate::WeightInfo for () {
-    fn create_origanization(b: u32) -> Weight {
+    fn create_organization(b: u32) -> Weight {
         (100_000_000_u64)
             .saturating_add((10_000_000_u64).saturating_mul(b as Weight))
             .saturating_add(DbWeight::get().reads(1_u64))
@@ -29,7 +29,7 @@ impl crate::WeightInfo for () {
             .saturating_add(DbWeight::get().writes(1_u64))
             .saturating_add(DbWeight::get().writes((1_u64).saturating_mul(b as Weight)))
     }
-    fn deposit_to_origanization() -> Weight {
+    fn deposit_to_organization() -> Weight {
         (100_000_000_u64)
     }
     fn create_proposal() -> Weight {
