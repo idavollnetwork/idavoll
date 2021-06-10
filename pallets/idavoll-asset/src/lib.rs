@@ -47,7 +47,7 @@ pub trait Trait: frame_system::Trait {
     type Balance: Member + Parameter + AtLeast32BitUnsigned + MaybeSerializeDeserialize + Default + Copy;
 
     /// The arithmetic type of asset identifier.
-    type AssetId: Parameter + Member +MaybeSerializeDeserialize + Ord + AtLeast32Bit + Default + Copy;
+    type AssetId: Parameter + Member  + Ord + AtLeast32Bit + Default + Copy;
 }
 
 /// the balance for local token(idv)
