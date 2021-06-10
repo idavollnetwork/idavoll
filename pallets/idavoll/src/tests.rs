@@ -97,7 +97,7 @@ fn only_members_can_create_proposals() {
 		// make the proposal with the proposal id
 		let call = make_transfer_proposal(10);
 		let tmp_proposal = create_proposal_without_storage(org_id,5,call_to_vec(call.clone()));
-		let proposal_id = IdavollModule::make_proposal_id(&tmp_proposal.clone());
+		// let proposal_id = IdavollModule::make_proposal_id(&tmp_proposal.clone());
 
 		assert_noop!(IdavollModule::create_proposal(RawOrigin::Signed(A.clone()).into(),c,
 		5,tmp_proposal.detail.sub_param.clone(),call),Error::<Test>::NotMemberInOrg);
