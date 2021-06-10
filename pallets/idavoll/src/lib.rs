@@ -372,8 +372,8 @@ impl<T: Trait> Module<T>  {
 mod test {
 	use super::*;
 	use crate::mock::{
-		A,B,OWNER,RECEIVER,
-		set_block_number,get_block_number,create_org,
+		A,OWNER,RECEIVER,
+		set_block_number,get_block_number,create_org,new_test_ext,
 	};
 	use frame_support::{
 		codec::{Encode},impl_outer_origin,
@@ -381,7 +381,7 @@ mod test {
 	use sp_core::H256;
 	use sp_runtime::{Perbill, traits::{BlakeTwo256, IdentityLookup,Hash}, testing::Header,ModuleId};
 	use pallet_balances;
-	use organization::{OrgInfo, Proposal};
+	use organization::{Proposal};
 	use rules::{OrgRuleParam};
 	use sp_std::{prelude::Vec, boxed::Box,collections::btree_map::BTreeMap};
 
@@ -477,26 +477,15 @@ mod test {
 		type WeightInfo = ();
 	}
 
-	fn new_test_ext() -> sp_io::TestExternalities {
-		let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-		let genesis = pallet_balances::GenesisConfig::<Test> {
-			balances: vec![
-				(A, 100000),
-				(B, 200000),
-			],
-		};
-		genesis.assimilate_storage(&mut t).unwrap();
-		t.into()
-	}
 	fn make_transfer_fail_proposal(value: u64) -> Vec<u8> {
 		Call::IdvBalances(pallet_balances::Call::transfer(RECEIVER.clone(), value)).encode()
 	}
 	fn make_transfer_proposal(value: u64) -> Vec<u8> {
 		Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value)).encode()
 	}
-	fn make_system_proposal(_value: u64) -> Vec<u8> {
-		Call::System(frame_system::Call::remark(vec![0; 1])).encode()
-	}
+	// fn make_system_proposal(_value: u64) -> Vec<u8> {
+	// 	Call::System(frame_system::Call::remark(vec![0; 1])).encode()
+	// }
 
 	fn create_proposal(oid: <Test as frame_system::Trait>::AccountId,value: u64,
 	owner: <Test as frame_system::Trait>::AccountId) -> ProposalOf<Test> {
