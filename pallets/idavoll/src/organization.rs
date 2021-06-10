@@ -267,6 +267,10 @@ impl<T: Trait> Module<T>  {
             return Err(Error::<T>::WrongRuleParam.into());
         }
 
+        if !Self::is_member(oid.clone(),&who) {
+            return Err(Error::<T>::NotMemberInOrg.into());
+        }
+
         let proposal = Proposal {
             org:    oid.clone(),
             call: call.encode(),

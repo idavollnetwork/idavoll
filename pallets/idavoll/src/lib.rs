@@ -55,11 +55,11 @@ use rules::{OrgRuleParam};
 
 
 pub trait WeightInfo {
-	fn create_origanization(m: u32) -> Weight;
-	fn deposit_to_origanization() -> Weight;
+	fn create_organization(m: u32) -> Weight;
+	fn deposit_to_organization() -> Weight;
 	fn create_proposal() -> Weight;
 	fn veto_proposal() -> Weight;
-	fn add_member_by_onwer() -> Weight;
+	fn add_member_by_owner() -> Weight;
 }
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -126,9 +126,6 @@ decl_event!(
 	ProposalId = ProposalIdOf<T>,
 	OrgInfo = OrgInfoOf<T>,
 	{
-		/// Event documentation should end with an array that provides descriptive names for event
-		/// parameters. [something, who]
-		SomethingStored(u32, AccountId),
 		/// An organization was created with the following parameters. \[organizationId, details\]
         OrganizationCreated(AccountId, OrgInfo),
 		/// A proposal has been finalized with the following result. \[proposal id, result\]
@@ -145,8 +142,6 @@ decl_event!(
 // Errors inform users that something went wrong.
 decl_error! {
 	pub enum Error for Module<T: Trait> {
-		/// Error names should be descriptive.
-		NoneValue,
 		/// need the maximum number for the storage value for the fixed type.
 		StorageOverflow,
 		OrganizationNotFound,
@@ -158,7 +153,6 @@ decl_error! {
 		ProposalDecodeFailed,
 		ProposalDuplicate,
 		ProposalExpired,
-		NotMember,
 		WrongRuleParam,
 	}
 }
@@ -181,14 +175,14 @@ decl_module! {
 		/// total: the total number of the new token
 		/// info: the details of the new organization
 		///
-		#[weight = T::WeightInfo::create_origanization(info.members.len() as u32)]
-		pub fn create_origanization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
+		#[weight = T::WeightInfo::create_organization(info.members.len() as u32)]
+		pub fn create_organization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let asset_id = Self::create_new_token(owner.clone(),total);
-			let mut info_clone = info;
-			info_clone.add_member(owner)?;
-			info_clone.set_asset_id(asset_id);
-			Self::storage_new_organization(info_clone)
+			let mut info = info;
+			info.add_member(owner)?;
+			info.set_asset_id(asset_id);
+			Self::storage_new_organization(info)
 		}
 		/// reserve the local asset(idv) to organization's Vault, it used to assigned by the proposal
 		/// of call function
@@ -196,8 +190,8 @@ decl_module! {
 		/// id: Ordinal number created by the organization，it mapped whit the organization id.
 		/// value: the amount of the local asset(IDV)
 		///
-		#[weight = T::WeightInfo::deposit_to_origanization()]
-		pub fn deposit_to_origanization(origin,id: u32,value: T::Balance) -> dispatch::DispatchResult {
+		#[weight = T::WeightInfo::deposit_to_organization()]
+		pub fn deposit_to_organization(origin,id: u32,value: T::Balance) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::on_reserve_to_vault(id,who,value)
 		}
@@ -223,8 +217,8 @@ decl_module! {
 		/// target: the new account
 		/// id: Ordinal number created by the organization，it mapped whit the organization id.
 		///
-		#[weight = T::WeightInfo::add_member_by_onwer()]
-		pub fn add_member_by_onwer(origin,target: <T::Lookup as StaticLookup>::Source,id: u32) -> dispatch::DispatchResult {
+		#[weight = T::WeightInfo::add_member_by_owner()]
+		pub fn add_member_by_owner(origin,target: <T::Lookup as StaticLookup>::Source,id: u32) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let who = T::Lookup::lookup(target)?;
 

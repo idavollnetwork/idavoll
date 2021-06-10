@@ -32,7 +32,7 @@ impl<T: Trait> Module<T> {
                             height: T::BlockNumber,
     ) -> DispatchResult {
         if !Self::is_member(oid.clone(),&voter) {
-            return Err(Error::<T>::NotMember.into());
+            return Err(Error::<T>::NotMemberInOrg.into());
         }
         let oinfo = Self::get_orginfo_by_id(oid)?;
         let aid = oinfo.get_asset_id();

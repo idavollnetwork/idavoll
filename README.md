@@ -110,7 +110,7 @@ There is a simple way to add member to `DAO` organization,submit an extrinsicz w
 3. `id`: Ordinal number created by the organization，it mapped whit the organization id.
 
 ### Deposit
-After the organization is created, any member can deposit assets(Local asset[`IDV`]) to the organization as an organization asset, submit an extrinsicz with `idavoll.deposit_to_origanization` function.
+After the organization is created, any member can deposit assets(Local asset[`IDV`]) to the organization as an organization asset, submit an extrinsicz with `idavoll.deposit_to_organization` function.
 
 1. `origin`: the owner(`alice`) of the organization or other member in the organization.
 2. `id`: Ordinal number created by the organization，it mapped whit the organization id.
