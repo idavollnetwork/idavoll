@@ -121,8 +121,10 @@ decl_error! {
 		Unknown,
 		/// A mint operation lead to an overflow.
 		Overflow,
-		/// Unknow the organization id
+		/// Unknown the organization id
 		UnknownOwnerID,
+		/// Unknown the organization id or account id
+		UnknownOrgIdAndAccountID,
 	}
 }
 
@@ -132,6 +134,8 @@ decl_storage! {
 		pub Balances: map hasher(blake2_128_concat) (T::AssetId, T::AccountId) => AccountAssetMetadata<T::Balance>;
 		/// record the balance of the local asset(idv) for every organization
 		pub Finances get(fn finances): map hasher(blake2_128_concat) T::AccountId => LocalBalance<T>;
+		/// record the balance of the local asset(idv) for every user who will create proposal
+		pub LockedBalance get(fn locked_balance): map hasher(blake2_128_concat) (T::AccountId,T::AccountId) => LocalBalance<T>;
 		/// The next asset identifier up for grabs.
 		NextAssetId get(fn next_asset_id): T::AssetId;
         // pub Locks get(fn locks): double_map hasher(blake2_128_concat) (T::AssetId, T::AccountId), hasher(blake2_128_concat) LockIdentifier => T::Balance;
@@ -291,6 +295,35 @@ impl<T: Trait> Module<T> {
         }else {
             Err(Error::<T>::UnknownOwnerID.into())
         }
+    }
+    pub fn get_vault_locked_balance(oid: T::AccountId,who: T::AccountId) -> Result<LocalBalance<T>, dispatch::DispatchError> {
+        if LockedBalance::<T>::contains_key((oid.clone(),who.clone())) {
+            Ok(<LockedBalance<T>>::get((oid,who)))
+        }else {
+            Err(Error::<T>::UnknownOrgIdAndAccountID.into())
+        }
+    }
+    pub fn vault_locked_balance(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
+        let balance = T::Currency::free_balance(&who);
+        ensure!(balance >= value,Error::<T>::BalanceLow);
+        let vault_account = Self::account_id();
+        T::Currency::transfer(&who,&vault_account,value,AllowDeath)?;
+
+        LockedBalance::<T>::mutate((oid,who), |a| -> dispatch::DispatchResult {
+            *a = a.saturating_add(value);
+            Ok(())
+        })
+    }
+    pub fn vault_unlocked_balance(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
+        let locked_balance = Self::get_vault_locked_balance(oid.clone(),who.clone())?;
+        ensure!(locked_balance >= value,Error::<T>::BalanceLow);
+        let vault_account = Self::account_id();
+        T::Currency::transfer(&vault_account,&who,value,AllowDeath)?;
+        LockedBalance::<T>::try_mutate_exists((oid,who),|x|{
+            let balance = x.as_mut().ok_or(Error::<T>::UnknownOrgIdAndAccountID)?;
+            *x = Some(balance.saturating_sub(value));
+            Ok(())
+        })
     }
     /// transfer the balance to the organization's Vault from the members in the organization
     pub fn transfer_to_vault(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
@@ -485,7 +518,7 @@ mod test {
     }
 
     #[test]
-    fn vault_transfer_and_balance_should_not_work() {
+    fn vault_transfer_and_balance_should_work() {
         new_test_ext().execute_with(|| {
             assert_noop!(IdavollAsset::vault_balance_of(ORGID),Error::<Test>::UnknownOwnerID);
             assert_ok!(IdavollAsset::transfer_to_vault(ORGID, A,30));
@@ -510,6 +543,31 @@ mod test {
             assert_eq!(IdavollAsset::vault_balance_of(ORGID2),Ok(30));
             assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),50);
             assert_eq!(IdvBalances::free_balance(2),30);
+        });
+    }
+    #[test]
+    fn vault_locked_and_unlocked_should_work() {
+        new_test_ext().execute_with(|| {
+            assert_noop!(IdavollAsset::get_vault_locked_balance(ORGID,A),Error::<Test>::UnknownOrgIdAndAccountID);
+
+            assert_ok!(IdavollAsset::vault_locked_balance(ORGID, A,30));
+            assert_eq!(IdavollAsset::get_vault_locked_balance(ORGID,A),Ok(30));
+            assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),30);
+            assert_eq!(IdvBalances::free_balance(A),70);
+
+            // unlocked the balance
+            assert_noop!(IdavollAsset::vault_unlocked_balance(ORGID, A, 50), Error::<Test>::BalanceLow);
+
+            assert_ok!(IdavollAsset::vault_unlocked_balance(ORGID, A,10));
+            assert_eq!(IdavollAsset::get_vault_locked_balance(ORGID,A),Ok(20));
+            assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),20);
+            assert_eq!(IdvBalances::free_balance(A),80);
+
+            assert_ok!(IdavollAsset::vault_unlocked_balance(ORGID, A,20));
+            assert_eq!(IdavollAsset::get_vault_locked_balance(ORGID,A),Ok(0));
+            assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),0);
+            assert_eq!(IdvBalances::free_balance(A),100);
+
         });
     }
 }

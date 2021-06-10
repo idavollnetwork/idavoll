@@ -91,6 +91,7 @@ impl frame_system::Trait for Test {
 
 parameter_types! {
 	pub const ExistentialDeposit: u64 = 10;
+	pub const InherentStakeProposal: u64 = 1;
     }
 impl pallet_balances::Trait for Test {
 	type Balance = u64;
@@ -120,6 +121,7 @@ impl Trait for Test {
 	type ModuleId = IdavollModuleId;
 	type AssetHandle = IdavollAsset;
 	type Finance = IdavollAsset;
+	type InherentStakeProposal = InherentStakeProposal;
 	type WeightInfo = ();
 }
 
@@ -129,6 +131,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 		balances: vec![
 			(A, 100000),
 			(B, 200000),
+			(OWNER, 300000),
 		],
 	};
 	genesis.assimilate_storage(&mut t).unwrap();
