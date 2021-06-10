@@ -33,7 +33,7 @@ use crate::{Trait,Module};
 /// runtime.
 pub trait BaseToken<AccountId> {
     /// The type used to identify currencies
-    type AssetId: FullCodec + Eq + PartialEq + Copy + MaybeSerializeDeserialize + Debug + Default;
+    type AssetId: FullCodec + Eq + PartialEq + Copy + Debug + Default;
 
     /// The balance of an account.
     type Balance: AtLeast32BitUnsigned

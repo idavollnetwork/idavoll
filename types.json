@@ -1,5 +1,6 @@
 {
   "Address": "AccountId",
+  "LookupSource": "AccountId",
   "BalanceOf": "Balance",
   "LocalBalance": "Balance",
   "ProposalId": "Hash",
