@@ -47,7 +47,7 @@ pub type IdavollAsset = idavoll_asset::Module<Test>;
 pub const A: u128 = 100;
 pub const B: u128 = 200;
 pub const OWNER: u128 = 88;
-pub const RECEIVER: u128 = 77;
+pub const RECEIVER: u128 = 7;
 // pub const ORGID: u128 = 1000;
 // pub const ORGID2: u128 = 2000;
 
@@ -151,9 +151,9 @@ pub fn make_transfer_proposal(value: u64) -> Box<Call> {
 	Box::new(Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value)))
 }
 
-pub fn create_org(_creator: u128) -> OrgInfoOf<Test> {
+pub fn create_org(members: Vec<<Test as frame_system::Trait>::AccountId>) -> OrgInfoOf<Test> {
 	let mut org = OrgInfo::new();
-	org.members = vec![];
+	org.members = members.clone();
 	org.param = get_rule();
 	org.clone()
 }
@@ -171,7 +171,7 @@ pub fn create_proposal_without_storage(id: u128,expire: u64,call: Vec<u8>) -> Pr
 }
 
 pub fn create_new_organization(creator: u128,total: u64) -> u128 {
-	let info = create_org(creator);
+	let info = create_org(vec![]);
 	let c = IdavollModule::counter_of();
 	match IdavollModule::create_organization(RawOrigin::Signed(creator).into(),total,info) {
 		Ok(_val) => {
