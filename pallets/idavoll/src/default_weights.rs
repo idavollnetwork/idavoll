@@ -37,7 +37,7 @@ impl crate::WeightInfo for () {
             .saturating_add(DbWeight::get().reads(1_u64))
             .saturating_add(DbWeight::get().writes(1_u64))
     }
-    fn veto_proposal() -> Weight {
+    fn vote_proposal() -> Weight {
         (200_000_000_u64)
             .saturating_add(DbWeight::get().reads((100_u64).saturating_mul(10_u64)))
             .saturating_add(DbWeight::get().writes((500_u64).saturating_mul(10_u64)))

@@ -119,7 +119,7 @@ impl Trait for Test {
 	type Balance = u64;
 	type AssetId = u32;
 	type ModuleId = IdavollModuleId;
-	type AssetHandle = IdavollAsset;
+	type AssetHandler = IdavollAsset;
 	type Finance = IdavollAsset;
 	type InherentStakeProposal = InherentStakeProposal;
 	type WeightInfo = ();

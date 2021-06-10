@@ -289,7 +289,7 @@ impl pallet_idavoll::Trait for Runtime {
 	type Balance = Balance;
 	type AssetId = u32;
 	type ModuleId = IdavollModuleId;
-	type AssetHandle = IdvAsset;
+	type AssetHandler = IdvAsset;
 	type Finance = IdvAsset;
 	type InherentStakeProposal = InherentStakeProposal;
 	type WeightInfo = ();

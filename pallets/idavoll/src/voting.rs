@@ -23,8 +23,8 @@ use frame_support::traits::Get;
 
 
 impl<T: Trait> Module<T> {
-    /// lock the voter's balance for voting the proposal,it can auto unlocked
-    /// when the proposal was closed
+    /// Vote  lock the voter's token for voting the proposal, it will be auto unlocked
+    /// when the proposal closed
     pub fn vote_on_proposal(oid: T::AccountId,
                             pid: ProposalIdOf<T>,
                             voter: T::AccountId,
@@ -42,14 +42,14 @@ impl<T: Trait> Module<T> {
             Self::try_close_proposal(oid.clone(),aid,pid,height)?;
             return Err(Error::<T>::ProposalExpired.into());
         }
-        // lock the voter's balance
-        T::AssetHandle::lock(aid,&voter,value)?;
+        // lock the voter's token
+        T::AssetHandler::lock(aid, &voter, value)?;
         Self::base_vote_on_proposal(pid,voter,value,yesorno)?;
         // check the proposal can closed
         Self::try_close_proposal(oid.clone(),aid,pid,height)
     }
-    /// close the proposal when the proposal was expire or passed.
-    /// it will auto unlocked the voter's asset
+    /// Try to close the proposal when the proposal was expire or passed.
+    /// It will auto unlock the voter's asset
     pub fn try_close_proposal(oid: T::AccountId,aid: T::AssetId,pid: ProposalIdOf<T>,height: T::BlockNumber) -> DispatchResult {
         let proposal = Self::get_proposal_by_id(pid)?;
         let is_expire = proposal.detail.is_expire(height);
@@ -60,7 +60,7 @@ impl<T: Trait> Module<T> {
         if is_expire || is_pass {
             Self::remove_proposal_by_id(pid);
             proposal.detail.votes.iter().for_each(|val|{
-                match T::AssetHandle::unlock(aid,&val.0.clone(),val.1.0) {
+                match T::AssetHandler::unlock(aid, &val.0.clone(), val.1.0) {
                     _ => {},
                 }
             });
@@ -76,9 +76,9 @@ impl<T: Trait> Module<T> {
         }
         Ok(())
     }
-    /// create new token with new organization
+    /// Create new token for the new organization
     pub fn create_new_token(owner: T::AccountId,total: T::Balance) -> T::AssetId {
-        T::AssetHandle::create(owner,total)
+        T::AssetHandler::create(owner, total)
     }
 
     pub fn handle_transfer_by_decision(oid: T::AccountId,to: T::AccountId,value: T::Balance) -> DispatchResult {

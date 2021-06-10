@@ -58,13 +58,12 @@ pub trait WeightInfo {
 	fn create_organization(m: u32) -> Weight;
 	fn deposit_to_organization() -> Weight;
 	fn create_proposal() -> Weight;
-	fn veto_proposal() -> Weight;
+	fn vote_proposal() -> Weight;
 	fn add_member_and_assigned_token() -> Weight;
 }
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
-	/// Because this pallet emits events, it depends on the runtime's definition of an event.
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
 	/// The outer call dispatch type.
@@ -73,17 +72,18 @@ pub trait Trait: frame_system::Trait {
 	+ From<frame_system::Call<Self>>
 	+ GetDispatchInfo;
 
-	/// The idavoll's module id, used for deriving its sovereign account ID,use to organization id.
+	/// The idavoll pallet's module id, used for deriving the organization id.
 	type ModuleId: Get<ModuleId>;
-	/// the Asset Handler will handle all op in the voting about asset operation.
-	type AssetHandle: BaseToken<
+
+	/// The asset handler will handle all asset operations.
+	type AssetHandler: BaseToken<
 		Self::AccountId,
 		AssetId = Self::AssetId,
 		Balance = Self::Balance,
 	>;
 
 	type Balance: Member + Parameter + AtLeast32BitUnsigned + MaybeSerializeDeserialize + Default + Copy;
-	/// keep the local asset(idv) of the organization
+	/// the vaults of all organizations
 	type Finance: BaseFinance<Self::AccountId,Self::Balance>;
 	type AssetId: Parameter + AtLeast32Bit + Default + Copy;
 
@@ -128,15 +128,15 @@ decl_event!(
 	ProposalId = ProposalIdOf<T>,
 	OrgInfo = OrgInfoOf<T>,
 	{
-		/// An organization was created with the following parameters. \[organizationId, details\]
-        OrganizationCreated(AccountId, OrgInfo),
-		/// A proposal has been finalized with the following result. \[proposal id, result\]
+		/// An organization was created with the following parameters. \[organization_id, organization_number, details\]
+        OrganizationCreated(AccountId, OrgCount, OrgInfo),
+		/// A proposal has been finalized with the following result. \[proposal_id, result\]
         ProposalFinalized(ProposalId, dispatch::DispatchResult),
-        /// A proposal has been passed. \[proposal id]
+        /// A proposal has been passed. \[proposal_id]
         ProposalPassed(ProposalId),
-        /// create a proposal.		\[organization id,proposal id,creator]
+        /// A proposal has been created.		\[organization_id, proposal_id, creator]
         ProposalCreated(AccountId,ProposalId,AccountId),
-        /// Proposal Refused or expired \[proposal id]
+        /// Proposal refused or expired \[proposal_id]
         ProposalRefuse(ProposalId),
 	}
 );
@@ -173,10 +173,10 @@ decl_module! {
 		fn deposit_event() = default;
 
 		/// create organization with the assetID=0,this will create new token for voting proposal
-		/// and all the tokens will assgined to the creator.
+		/// and all the tokens will be assigned to the creator.
 		///
 		/// origin: the creator of the organization
-		/// total: the total number of the new token
+		/// total: the total amount of the new token
 		/// info: the details of the new organization
 		///
 		#[weight = T::WeightInfo::create_organization(info.members.len() as u32)]
@@ -188,11 +188,11 @@ decl_module! {
 			info.set_asset_id(asset_id);
 			Self::storage_new_organization(info)
 		}
-		/// reserve the local asset(idv) to organization's Vault, it used to assigned by the proposal
-		/// of call function
+
+		/// Deposit the asset(IDV) to organization's vault, which will be assigned by the proposal
 		///
-		/// id: Ordinal number created by the organization，it mapped whit the organization id.
-		/// value: the amount of the local asset(IDV)
+		/// id: organization number，it mapped with the organization id.
+		/// value: the amount of the asset(IDV)
 		///
 		#[weight = T::WeightInfo::deposit_to_organization()]
 		pub fn deposit_to_organization(origin,id: u32,value: T::Balance) -> dispatch::DispatchResult {
@@ -209,10 +209,10 @@ decl_module! {
 		/// value: the weight of vote power,it is the token amount of the token in the organization.
 		/// yesorno: the user approve or against the proposal
 		///
-		#[weight = T::WeightInfo::veto_proposal()]
-		pub fn vote_proposal(origin,pid: ProposalIdOf<T>,value: T::Balance,yesorno: bool) -> dispatch::DispatchResult {
+		#[weight = T::WeightInfo::vote_proposal()]
+		pub fn vote_proposal(origin, pid: ProposalIdOf<T>, value: T::Balance, yesorno: bool) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
-			Self::on_vote_proposal(pid,who,value,yesorno,frame_system::Module::<T>::block_number())
+			Self::on_vote_proposal(pid, who, value, yesorno, frame_system::Module::<T>::block_number())
 		}
 		/// voting on the proposal by the members in the organization,user in the organization can add
 		/// the other account into the organization, New members must obtain tokens before they can
@@ -227,7 +227,7 @@ decl_module! {
 			let owner = ensure_signed(origin)?;
 			let who = T::Lookup::lookup(target)?;
 
-			Self::on_add_member_and_assigned_token(owner,who,id,assigned_value)
+			Self::on_add_member_and_assign_token(owner,who,id,assigned_value)
 		}
 		/// create proposal in the organization for voting by members
 		///
@@ -262,18 +262,18 @@ decl_module! {
 
 impl<T: Trait> Module<T>  {
 
-	/// be accountid of organization id for orginfos in the storage
+	/// Generate organization id, which is used as the key of organization info storage
 	pub fn counter_2_orgid(c: OrgCount) -> T::AccountId {
 		T::ModuleId::get().into_sub_account(c)
 	}
 	pub fn counter_of() -> OrgCount {
 		OrgCounter::get()
 	}
-	/// get the count of the proposal in the storage
+	/// Get the count of the proposals in storage
 	pub fn count_of_proposals() -> u32 {
 		<Proposals<T>>::iter().map(|(v, _)| v).count() as u32
 	}
-	/// get the count of the proposal in the storage
+	/// Get the count of the proposals in storage
 	pub fn count_of_organizations() -> u32 {
 		<OrgInfos<T>>::iter().map(|(v, _)| v).count() as u32
 	}
@@ -287,14 +287,14 @@ impl<T: Trait> Module<T>  {
 			Err(Error::<T>::OrganizationNotFound.into())
 		}
 	}
-	/// check the user belong to the organization
-	pub fn is_member(oid: T::AccountId,who: &T::AccountId) -> bool {
+	/// Check whether the user belongs to the organization
+	pub fn is_member(oid: T::AccountId, who: &T::AccountId) -> bool {
 		match <OrgInfos<T>>::get(oid) {
 			Some(val) => val.is_member(who.clone()),
 			None => false,
 		}
 	}
-	/// return proposal info
+	/// Get the info of proposal `pid`
 	pub fn get_proposal_by_id(pid: ProposalIdOf<T>) -> Result<ProposalOf<T>, dispatch::DispatchError> {
 		match Proposals::<T>::get(pid) {
 			Some(proposal) => Ok(proposal),
@@ -302,14 +302,14 @@ impl<T: Trait> Module<T>  {
 		}
 	}
 
-	/// write the organization info to the storage on chain by create organization
+	/// Storage the info of the new created organization
 	fn storage_new_organization(oinfo: OrgInfoOf<T>) -> dispatch::DispatchResult {
 		let counter = OrgCounter::get();
 		let new_counter = counter.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
 		let oid = Self::counter_2_orgid(counter);
 
 		OrgInfos::<T>::insert(&oid, oinfo.clone());
-		Self::deposit_event(RawEvent::OrganizationCreated(oid, oinfo));
+		Self::deposit_event(RawEvent::OrganizationCreated(oid, counter, oinfo));
 		OrgCounter::put(new_counter);
 		Ok(())
 	}
@@ -471,7 +471,7 @@ mod test {
 		type Balance = u64;
 		type AssetId = u32;
 		type ModuleId = IdavollModuleId;
-		type AssetHandle = IdavollAsset;
+		type AssetHandler = IdavollAsset;
 		type Finance = IdavollAsset;
 		type InherentStakeProposal = InherentStakeProposal;
 		type WeightInfo = ();
@@ -564,16 +564,16 @@ mod test {
 			assert_eq!(IdavollModule::get_orginfo_by_id(org_id),Ok(org.clone()));
 			assert_eq!(IdavollModule::get_count_members(org_id),4);
 			// add member for the organization
-			assert_noop!(IdavollModule::on_add_member_and_assigned_token(22,2,0,0),Error::<Test>::NotMemberInOrg);
-			assert_noop!(IdavollModule::on_add_member_and_assigned_token(1,2,0,0),Error::<Test>::MemberDuplicate);
-			assert_noop!(IdavollModule::on_add_member_and_assigned_token(1,2,0,22),Error::<Test>::TokenBalanceLow);
+			assert_noop!(IdavollModule::on_add_member_and_assign_token(22,2,0,0),Error::<Test>::NotMemberInOrg);
+			assert_noop!(IdavollModule::on_add_member_and_assign_token(1,2,0,0),Error::<Test>::MemberDuplicate);
+			assert_noop!(IdavollModule::on_add_member_and_assign_token(1,2,0,22),Error::<Test>::TokenBalanceLow);
 
-			assert_ok!(IdavollModule::on_add_member_and_assigned_token(OWNER,22,0,22));
+			assert_ok!(IdavollModule::on_add_member_and_assign_token(OWNER,22,0,22));
 			assert_eq!(IdavollAsset::free_balance(asset_id,&OWNER),78);
 			assert_eq!(IdavollAsset::free_balance(asset_id,&22),22);
 			assert_eq!(IdavollModule::get_count_members(org_id),5);
 
-			assert_ok!(IdavollModule::on_add_member_and_assigned_token(OWNER,23,0,8));
+			assert_ok!(IdavollModule::on_add_member_and_assign_token(OWNER,23,0,8));
 			assert_eq!(IdavollModule::get_count_members(org_id),6);
 			assert_eq!(IdavollAsset::free_balance(asset_id,&OWNER),70);
 			assert_eq!(IdavollAsset::free_balance(asset_id,&23),8);

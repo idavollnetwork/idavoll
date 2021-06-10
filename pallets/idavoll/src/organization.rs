@@ -133,11 +133,11 @@ where
     Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned,
     AssetId: Clone + Default,
 {
-    /// A set of accounts of an organization.
+    /// Accounts set of the organization
     pub members: Vec<AccountId>,
-    /// params for every organization,will set on create organization
+    /// Parameters of the organization, set on organization creating
     pub param:  OrgRuleParam<Balance>,
-    /// only one asset for one organization
+    /// The token for the organization
     pub asset: AssetInfo<AssetId>,
 }
 
@@ -236,11 +236,11 @@ impl<T: Trait> Module<T>  {
     pub fn get_total_token_by_oid(oid: T::AccountId) -> Result<T::Balance,DispatchResult> {
         let org = Self::get_orginfo_by_id(oid)?;
 
-        Ok(T::AssetHandle::total(org.get_asset_id()))
+        Ok(T::AssetHandler::total(org.get_asset_id()))
     }
     pub fn get_free_balance_on_token_by_user(oid: T::AccountId,who: T::AccountId) -> Result<T::Balance,DispatchResult> {
         let org = Self::get_orginfo_by_id(oid)?;
-        Ok(T::AssetHandle::free_balance_of(org.get_asset_id(),&who))
+        Ok(T::AssetHandler::free_balance_of(org.get_asset_id(), &who))
     }
     pub fn get_local_balance(id: T::AccountId) -> Result<T::Balance,DispatchError> {
         T::Finance::balance_of(id)
@@ -289,18 +289,18 @@ impl<T: Trait> Module<T>  {
         let proposal = Self::get_proposal_by_id(pid)?;
         Self::vote_on_proposal(proposal.org,pid,who,value,yesorno,cur)
     }
-    pub fn on_add_member_and_assigned_token(owner: T::AccountId,who: T::AccountId,id: u32,value: T::Balance) -> dispatch::DispatchResult {
+    pub fn on_add_member_and_assign_token(owner: T::AccountId, who: T::AccountId, id: u32, value: T::Balance) -> dispatch::DispatchResult {
         let oid = Self::counter_2_orgid(id);
         match Self::get_token_id_by_oid(oid.clone()) {
             Ok(asset_id) => {
-                let free = T::AssetHandle::free_balance_of(asset_id,&owner);
+                let free = T::AssetHandler::free_balance_of(asset_id, &owner);
 
                 ensure!(free >= value && value >= Zero::zero(),Error::<T>::TokenBalanceLow);
                 ensure!(Self::is_member(oid.clone(),&owner),Error::<T>::NotMemberInOrg);
                 ensure!(!Self::is_member(oid.clone(),&who),Error::<T>::MemberDuplicate);
                 Self::base_add_member_on_orgid(oid.clone(),who.clone())?;
                 if value > Zero::zero() {
-                    T::AssetHandle::transfer(asset_id,&owner,&who,value)
+                    T::AssetHandler::transfer(asset_id, &owner, &who, value)
                 } else {
                     Ok(())
                 }
