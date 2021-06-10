@@ -371,7 +371,10 @@ impl<T: Trait> Module<T>  {
 #[cfg(test)]
 mod test {
 	use super::*;
-
+	use crate::mock::{
+		A,B,OWNER,RECEIVER,
+		set_block_number,get_block_number,create_org,
+	};
 	use frame_support::{
 		codec::{Encode},impl_outer_origin,
 		impl_outer_dispatch, assert_ok, assert_noop, parameter_types, weights::Weight};
@@ -398,13 +401,7 @@ mod test {
 	type IdvBalances = pallet_balances::Module<Test>;
 	type IdavollAsset = idavoll_asset::Module<Test>;
 	type IdavollAssetError = idavoll_asset::Error<Test>;
-
-	const A: u128 = 100;
-	const B: u128 = 200;
-	const OWNER: u128 = 88;
-	const RECEIVER: u128 = 7;
 	const ORGID: u128 = 1000;
-	// const ORGID2: u128 = 2000;
 
 	#[derive(Clone, Eq, PartialEq)]
 	pub struct Test;
@@ -491,13 +488,6 @@ mod test {
 		genesis.assimilate_storage(&mut t).unwrap();
 		t.into()
 	}
-	fn set_block_number(n: <Test as frame_system::Trait>::BlockNumber) -> <Test as frame_system::Trait>::BlockNumber {
-		System::set_block_number(n);
-		n
-	}
-	fn get_block_number() -> <Test as frame_system::Trait>::BlockNumber {
-		System::block_number()
-	}
 	fn make_transfer_fail_proposal(value: u64) -> Vec<u8> {
 		Call::IdvBalances(pallet_balances::Call::transfer(RECEIVER.clone(), value)).encode()
 	}
@@ -507,12 +497,7 @@ mod test {
 	fn make_system_proposal(_value: u64) -> Vec<u8> {
 		Call::System(frame_system::Call::remark(vec![0; 1])).encode()
 	}
-	fn create_org() -> OrgInfoOf<Test> {
-		let mut org = OrgInfo::new();
-		org.members = vec![OWNER,1,2,3];
-		org.param = OrgRuleParam::new(60,5,0);
-		org.clone()
-	}
+
 	fn create_proposal(oid: <Test as frame_system::Trait>::AccountId,value: u64,
 	owner: <Test as frame_system::Trait>::AccountId) -> ProposalOf<Test> {
 		let sub_param = OrgRuleParam::new(60,5,0);
@@ -558,7 +543,7 @@ mod test {
 	#[test]
 	fn base_organization_01_should_work() {
 		new_test_ext().execute_with(|| {
-			let mut org = create_org();
+			let mut org = create_org(vec![OWNER,1,2,3]);
 			let asset_id = IdavollModule::create_new_token(OWNER.clone(),100);
 			assert_eq!(asset_id,0);
 			org.set_asset_id(asset_id.clone());
@@ -570,7 +555,7 @@ mod test {
 			assert_eq!(IdavollModule::is_member(IdavollModule::counter_2_orgid(0),&9),false);
 
 			for _i in 0..100 {
-				let org = create_org();
+				let org = create_org(vec![OWNER,1,2,3]);
 				assert_ok!(IdavollModule::storage_new_organization(org.clone()));
 			}
 			assert_eq!(IdavollModule::count_of_organizations(),100+1);
@@ -581,7 +566,7 @@ mod test {
 	fn base_organization_02_should_work() {
 
 		new_test_ext().execute_with(|| {
-			let mut org = create_org();
+			let mut org = create_org(vec![OWNER,1,2,3]);
 			let asset_id = IdavollModule::create_new_token(OWNER.clone(),100);
 			assert_eq!(asset_id,0);
 			org.set_asset_id(asset_id.clone());
