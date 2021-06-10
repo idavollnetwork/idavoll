@@ -50,7 +50,7 @@ pub trait Trait: frame_system::Trait {
     type AssetId: Parameter + Member +MaybeSerializeDeserialize + Ord + AtLeast32Bit + Default + Copy;
 }
 
-/// the balance for local token(idv)
+/// the balance for local asset(idv)
 pub type LocalBalance<T> = <<T as Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug)]
@@ -94,11 +94,9 @@ decl_event! {
 		Issued(AssetId, AccountId, Balance),
 		/// Some assets were transferred. \[asset_id, from, to, amount\]
 		Transferred(AssetId, AccountId, AccountId, Balance),
-		/// Some assets were destroyed. \[asset_id, owner, balance\]
-		Destroyed(AssetId, AccountId, Balance),
-		/// Some assets were minted. \[asset_id, issuer, amount\]
+		/// Some assets were minted. \[asset_id, owner, amount\]
 		Minted(AssetId, AccountId, Balance),
-		/// Some assets were burned. \[asset_id, issuer, amount\]
+		/// Some assets were burned. \[asset_id, owner, amount\]
 		Burned(AssetId, AccountId, Balance),
 		/// Some assets were locked. \[asset_id, who, amount\]
 		Locked(AssetId, AccountId, Balance),
@@ -178,7 +176,7 @@ impl<T: Trait> Module<T> {
     pub fn total_balance(id: T::AssetId, who: &T::AccountId) -> T::Balance {
         <Balances<T>>::get((id, who)).total()
     }
-    /// Get the total supply of an asset `id`.
+    /// Get the total supply of the asset `id`.
     pub fn total_issuances(id: T::AssetId) -> T::Balance {
         match <TotalSupply<T>>::get(id) {
             Some(asset) => asset.supply,
@@ -187,9 +185,8 @@ impl<T: Trait> Module<T> {
     }
     /// Issue a new class of fungible assets. There are, and will only ever be, `total`
     /// such assets and they'll all belong to the `origin` initially. It will have an
-    /// identifier `AssetId` instance: this will be specified in the `Issued` event.
+    /// identify `AssetId` instance: this will be specified in the `Issued` event.
     fn create_token(owner: T::AccountId,total: T::Balance) -> T::AssetId {
-
         let id = Self::next_asset_id();
         <NextAssetId<T>>::mutate(|id| *id += One::one());
 
@@ -209,7 +206,7 @@ impl<T: Trait> Module<T> {
         id
     }
 
-    /// Move some assets from one holder to another.
+    /// Transfer some assets from one holder to another.
     fn base_transfer(id: T::AssetId, origin: &T::AccountId,
                 target: &T::AccountId, amount: T::Balance) -> dispatch::DispatchResult {
 
@@ -296,14 +293,14 @@ impl<T: Trait> Module<T> {
             Err(Error::<T>::UnknownOwnerID.into())
         }
     }
-    pub fn get_vault_locked_balance(oid: T::AccountId,who: T::AccountId) -> Result<LocalBalance<T>, dispatch::DispatchError> {
+    pub fn vault_locked_balance_of(oid: T::AccountId, who: T::AccountId) -> Result<LocalBalance<T>, dispatch::DispatchError> {
         if LockedBalance::<T>::contains_key((oid.clone(),who.clone())) {
             Ok(<LockedBalance<T>>::get((oid,who)))
         }else {
             Err(Error::<T>::UnknownOrgIdAndAccountID.into())
         }
     }
-    pub fn vault_locked_balance(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
+    pub fn vault_lock_asset(oid: T::AccountId, who: T::AccountId, value: LocalBalance<T>) -> dispatch::DispatchResult {
         let balance = T::Currency::free_balance(&who);
         ensure!(balance >= value,Error::<T>::BalanceLow);
         let vault_account = Self::account_id();
@@ -314,8 +311,8 @@ impl<T: Trait> Module<T> {
             Ok(())
         })
     }
-    pub fn vault_unlocked_balance(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
-        let locked_balance = Self::get_vault_locked_balance(oid.clone(),who.clone())?;
+    pub fn vault_unlock_asset(oid: T::AccountId, who: T::AccountId, value: LocalBalance<T>) -> dispatch::DispatchResult {
+        let locked_balance = Self::vault_locked_balance_of(oid.clone(), who.clone())?;
         ensure!(locked_balance >= value,Error::<T>::BalanceLow);
         let vault_account = Self::account_id();
         T::Currency::transfer(&vault_account,&who,value,AllowDeath)?;
@@ -325,7 +322,7 @@ impl<T: Trait> Module<T> {
             Ok(())
         })
     }
-    /// transfer the balance to the organization's Vault from the members in the organization
+    /// transfer assets to the organization's Vault from the members in the organization
     pub fn transfer_to_vault(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
         let balance = T::Currency::free_balance(&who);
         ensure!(balance >= value,Error::<T>::BalanceLow);
@@ -337,7 +334,7 @@ impl<T: Trait> Module<T> {
             Ok(())
         })
     }
-    /// transfer the balance to `to` from finance's Vault by Call<> function
+    /// transfer assets from organization's Vault to `to` by Call<> function
     pub fn spend_organization_vault(oid: T::AccountId,to: T::AccountId,value: LocalBalance<T>) -> dispatch::DispatchResult {
         let vault_balance = Self::vault_balance_of(oid.clone())?;
         ensure!(vault_balance >= value,Error::<T>::BalanceLow);
@@ -548,23 +545,23 @@ mod test {
     #[test]
     fn vault_locked_and_unlocked_should_work() {
         new_test_ext().execute_with(|| {
-            assert_noop!(IdavollAsset::get_vault_locked_balance(ORGID,A),Error::<Test>::UnknownOrgIdAndAccountID);
+            assert_noop!(IdavollAsset::vault_locked_balance_of(ORGID,A),Error::<Test>::UnknownOrgIdAndAccountID);
 
-            assert_ok!(IdavollAsset::vault_locked_balance(ORGID, A,30));
-            assert_eq!(IdavollAsset::get_vault_locked_balance(ORGID,A),Ok(30));
+            assert_ok!(IdavollAsset::vault_lock_asset(ORGID, A,30));
+            assert_eq!(IdavollAsset::vault_locked_balance_of(ORGID, A), Ok(30));
             assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),30);
             assert_eq!(IdvBalances::free_balance(A),70);
 
             // unlocked the balance
-            assert_noop!(IdavollAsset::vault_unlocked_balance(ORGID, A, 50), Error::<Test>::BalanceLow);
+            assert_noop!(IdavollAsset::vault_unlock_asset(ORGID, A, 50), Error::<Test>::BalanceLow);
 
-            assert_ok!(IdavollAsset::vault_unlocked_balance(ORGID, A,10));
-            assert_eq!(IdavollAsset::get_vault_locked_balance(ORGID,A),Ok(20));
+            assert_ok!(IdavollAsset::vault_unlock_asset(ORGID, A,10));
+            assert_eq!(IdavollAsset::vault_locked_balance_of(ORGID, A), Ok(20));
             assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),20);
             assert_eq!(IdvBalances::free_balance(A),80);
 
-            assert_ok!(IdavollAsset::vault_unlocked_balance(ORGID, A,20));
-            assert_eq!(IdavollAsset::get_vault_locked_balance(ORGID,A),Ok(0));
+            assert_ok!(IdavollAsset::vault_unlock_asset(ORGID, A,20));
+            assert_eq!(IdavollAsset::vault_locked_balance_of(ORGID, A), Ok(0));
             assert_eq!(IdvBalances::free_balance(IdavollAsset::account_id()),0);
             assert_eq!(IdvBalances::free_balance(A),100);
 
