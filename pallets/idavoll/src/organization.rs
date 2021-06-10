@@ -32,6 +32,7 @@ use sp_runtime::{RuntimeDebug, traits::{Hash as FrameHash,AtLeast32BitUnsigned,M
 use sp_std::{cmp::PartialOrd,prelude::Vec, boxed::Box,collections::btree_map::BTreeMap};
 use idavoll_asset::{token::BaseToken,finance::BaseFinance};
 use frame_support::sp_runtime::DispatchError;
+use frame_support::traits::Get;
 
 // pub type OrganizationId = u64;
 
@@ -274,6 +275,8 @@ impl<T: Trait> Module<T>  {
         if !Self::is_member(oid.clone(),&who) {
             return Err(Error::<T>::NotMemberInOrg.into());
         }
+        let locked_balance = T::InherentStakeProposal::get();
+        T::Finance::lock_balance(oid.clone(),who.clone(),locked_balance)?;
 
         let proposal = Proposal {
             org:    oid.clone(),

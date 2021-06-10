@@ -44,6 +44,13 @@ pub trait BaseFinance<AccountId,Balance> {
     fn reserve_to_org(oid: AccountId,who: AccountId,value: Balance) -> DispatchResult;
     /// transfer the asset(idv) to the user account, and reduce the organization's amount
     fn transfer_by_vault(oid: AccountId,to: AccountId,value: Balance) -> DispatchResult;
+    /// get the locked balance(for local idv asset) by the user who create the proposal,
+    /// the real asset is storage to the pallet_balance pallet
+    fn locked_balance_of(oid: AccountId,who: AccountId) -> Result<Balance,DispatchError>;
+    /// lock the balance by the user
+    fn lock_balance(oid: AccountId,who: AccountId,value: Balance) -> DispatchResult;
+    /// unlock the balance by the user
+    fn unlock_balance(oid: AccountId,who: AccountId,value: Balance)-> DispatchResult;
 }
 
 impl<T: Trait> Module<T> {
@@ -72,5 +79,14 @@ impl<T: Trait> BaseFinance<T::AccountId,LocalBalance<T>> for Module<T> {
     }
     fn transfer_by_vault(oid: T::AccountId,to: T::AccountId,value: LocalBalance<T>) -> DispatchResult {
         Self::spend_organization_vault(oid,to,value)
+    }
+    fn locked_balance_of(oid: T::AccountId,who: T::AccountId) -> Result<LocalBalance<T>,DispatchError> {
+        Self::get_vault_locked_balance(oid,who)
+    }
+    fn lock_balance(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> DispatchResult {
+        Self::vault_locked_balance(oid,who,value)
+    }
+    fn unlock_balance(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>)-> DispatchResult {
+        Self::vault_unlocked_balance(oid,who,value)
     }
 }

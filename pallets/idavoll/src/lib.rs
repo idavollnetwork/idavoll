@@ -87,6 +87,8 @@ pub trait Trait: frame_system::Trait {
 	type Finance: BaseFinance<Self::AccountId,Self::Balance>;
 	type AssetId: Parameter + AtLeast32Bit + Default + Copy;
 
+	/// the staking balance of local asset by user create proposal.
+	type InherentStakeProposal: Get<BalanceOf<Self>>;
 	/// Weight information for extrinsics in this pallet.
 	type WeightInfo: WeightInfo;
 }
@@ -166,6 +168,7 @@ decl_module! {
 		// Errors must be initialized if they are used by the pallet.
 		type Error = Error<T>;
 		const ModuleId: ModuleId = T::ModuleId::get();
+		const InherentStakeProposal: BalanceOf<T> = T::InherentStakeProposal::get();
 		// Events must be initialized if they are used by the pallet.
 		fn deposit_event() = default;
 
@@ -443,6 +446,7 @@ mod test {
 
 	parameter_types! {
 	pub const ExistentialDeposit: u64 = 10;
+	pub const InherentStakeProposal: u64 = 1;
     }
 	impl pallet_balances::Trait for Test {
 		type Balance = u64;
@@ -472,6 +476,7 @@ mod test {
 		type ModuleId = IdavollModuleId;
 		type AssetHandle = IdavollAsset;
 		type Finance = IdavollAsset;
+		type InherentStakeProposal = InherentStakeProposal;
 		type WeightInfo = ();
 	}
 

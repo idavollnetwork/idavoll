@@ -19,6 +19,7 @@ use frame_support::{
 };
 use crate::{ProposalIdOf, Error,Module, RawEvent, Trait,BalanceOf};
 use idavoll_asset::{token::BaseToken,finance::BaseFinance};
+use frame_support::traits::Get;
 
 
 impl<T: Trait> Module<T> {
@@ -34,22 +35,22 @@ impl<T: Trait> Module<T> {
         if !Self::is_member(oid.clone(),&voter) {
             return Err(Error::<T>::NotMemberInOrg.into());
         }
-        let oinfo = Self::get_orginfo_by_id(oid)?;
+        let oinfo = Self::get_orginfo_by_id(oid.clone())?;
         let aid = oinfo.get_asset_id();
         let proposal = Self::get_proposal_by_id(pid)?;
         if proposal.detail.is_expire(height) {
-            Self::try_close_proposal(aid,pid,height)?;
+            Self::try_close_proposal(oid.clone(),aid,pid,height)?;
             return Err(Error::<T>::ProposalExpired.into());
         }
         // lock the voter's balance
         T::AssetHandle::lock(aid,&voter,value)?;
         Self::base_vote_on_proposal(pid,voter,value,yesorno)?;
         // check the proposal can closed
-        Self::try_close_proposal(aid,pid,height)
+        Self::try_close_proposal(oid.clone(),aid,pid,height)
     }
     /// close the proposal when the proposal was expire or passed.
     /// it will auto unlocked the voter's asset
-    pub fn try_close_proposal(aid: T::AssetId,pid: ProposalIdOf<T>,height: T::BlockNumber) -> DispatchResult {
+    pub fn try_close_proposal(oid: T::AccountId,aid: T::AssetId,pid: ProposalIdOf<T>,height: T::BlockNumber) -> DispatchResult {
         let proposal = Self::get_proposal_by_id(pid)?;
         let is_expire = proposal.detail.is_expire(height);
         let is_pass = Self::is_pass(proposal.clone());
@@ -63,6 +64,9 @@ impl<T: Trait> Module<T> {
                     _ => {},
                 }
             });
+            let proposal_creator = proposal.creator();
+            let locked_balance = T::InherentStakeProposal::get();
+            T::Finance::unlock_balance(oid,proposal_creator,locked_balance)?;
             if is_expire {
                 Self::deposit_event(RawEvent::ProposalRefuse(pid));
             }

@@ -280,6 +280,9 @@ impl idavoll_asset::Trait for Runtime {
 	type ModuleId = IdvAssetModuleId;
 }
 
+parameter_types! {
+	pub const InherentStakeProposal: Balance = 10;
+}
 impl pallet_idavoll::Trait for Runtime {
 	type Event = Event;
 	type Call = Call;
@@ -288,6 +291,7 @@ impl pallet_idavoll::Trait for Runtime {
 	type ModuleId = IdavollModuleId;
 	type AssetHandle = IdvAsset;
 	type Finance = IdvAsset;
+	type InherentStakeProposal = InherentStakeProposal;
 	type WeightInfo = ();
 }
 
