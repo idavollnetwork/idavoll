@@ -59,7 +59,7 @@ pub trait WeightInfo {
 	fn deposit_to_organization() -> Weight;
 	fn create_proposal() -> Weight;
 	fn veto_proposal() -> Weight;
-	fn add_member_by_owner() -> Weight;
+	fn add_member_and_assigned_token() -> Weight;
 }
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -145,6 +145,7 @@ decl_error! {
 		/// need the maximum number for the storage value for the fixed type.
 		StorageOverflow,
 		OrganizationNotFound,
+		TokenBalanceLow,
 		/// it is not a member in the organization
 		NotMemberInOrg,
 		MemberDuplicate,
@@ -217,12 +218,13 @@ decl_module! {
 		/// target: the new account
 		/// id: Ordinal number created by the organization，it mapped whit the organization id.
 		///
-		#[weight = T::WeightInfo::add_member_by_owner()]
-		pub fn add_member_by_owner(origin,target: <T::Lookup as StaticLookup>::Source,id: u32) -> dispatch::DispatchResult {
+		#[weight = T::WeightInfo::add_member_and_assigned_token()]
+		pub fn add_member_and_assigned_token(origin,target: <T::Lookup as StaticLookup>::Source,id: u32,
+		assigned_value: T::Balance) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let who = T::Lookup::lookup(target)?;
 
-			Self::on_add_member(owner,who,id)
+			Self::on_add_member_and_assigned_token(owner,who,id,assigned_value)
 		}
 		/// create proposal in the organization for voting by members
 		///
@@ -583,12 +585,19 @@ mod test {
 			assert_eq!(IdavollModule::get_orginfo_by_id(org_id),Ok(org.clone()));
 			assert_eq!(IdavollModule::get_count_members(org_id),4);
 			// add member for the organization
-			assert_noop!(IdavollModule::on_add_member(22,2,0),Error::<Test>::NotMemberInOrg);
-			assert_noop!(IdavollModule::on_add_member(1,2,0),Error::<Test>::MemberDuplicate);
-			assert_ok!(IdavollModule::on_add_member(1,22,0));
+			assert_noop!(IdavollModule::on_add_member_and_assigned_token(22,2,0,0),Error::<Test>::NotMemberInOrg);
+			assert_noop!(IdavollModule::on_add_member_and_assigned_token(1,2,0,0),Error::<Test>::MemberDuplicate);
+			assert_noop!(IdavollModule::on_add_member_and_assigned_token(1,2,0,22),Error::<Test>::TokenBalanceLow);
+
+			assert_ok!(IdavollModule::on_add_member_and_assigned_token(OWNER,22,0,22));
+			assert_eq!(IdavollAsset::free_balance(asset_id,&OWNER),78);
+			assert_eq!(IdavollAsset::free_balance(asset_id,&22),22);
 			assert_eq!(IdavollModule::get_count_members(org_id),5);
-			assert_ok!(IdavollModule::on_add_member(OWNER,23,0));
+
+			assert_ok!(IdavollModule::on_add_member_and_assigned_token(OWNER,23,0,8));
 			assert_eq!(IdavollModule::get_count_members(org_id),6);
+			assert_eq!(IdavollAsset::free_balance(asset_id,&OWNER),70);
+			assert_eq!(IdavollAsset::free_balance(asset_id,&23),8);
 		});
 	}
 
