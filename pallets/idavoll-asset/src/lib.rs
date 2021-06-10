@@ -35,10 +35,10 @@ pub mod finance;
 
 /// The module configuration trait.
 pub trait Trait: frame_system::Trait {
-    /// The idv-asset's module id, used for deriving its sovereign account ID.
+    /// The idavoll-asset's module id, used for deriving its sovereign account ID.
     type ModuleId: Get<ModuleId>;
 
-    /// The staking balance.(for the local asset(idv))
+    /// The staking balance, used for the vault asset(IDV)
     type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
@@ -50,7 +50,7 @@ pub trait Trait: frame_system::Trait {
     type AssetId: Parameter + Member +MaybeSerializeDeserialize + Ord + AtLeast32Bit + Default + Copy;
 }
 
-/// the balance for local asset(idv)
+/// the balance of vault asset(IDV)
 pub type LocalBalance<T> = <<T as Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug)]
@@ -58,9 +58,8 @@ pub struct AssetDetails<
     Balance: Encode + Decode + Clone + Debug + Eq + PartialEq,
     AccountId: Encode + Decode + Clone + Debug + Eq + PartialEq,
 > {
-    /// Can First allocation the token.
     issuer: AccountId,
-    /// Can be assigned when first created
+    /// Whether will tokens be assigned when created
     init:   bool,
     /// The total supply across all accounts.
     supply: Balance,
