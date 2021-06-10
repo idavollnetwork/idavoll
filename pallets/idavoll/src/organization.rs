@@ -289,8 +289,8 @@ impl<T: Trait> Module<T>  {
         let proposal = Self::get_proposal_by_id(pid)?;
         Self::vote_on_proposal(proposal.org,pid,who,value,yesorno,cur)
     }
-    pub fn on_add_member_and_assign_token(owner: T::AccountId, who: T::AccountId, id: u32, value: T::Balance) -> dispatch::DispatchResult {
-        let oid = Self::counter_2_orgid(id);
+    pub fn on_add_member_and_assign_token(owner: T::AccountId, who: T::AccountId, number: u32, value: T::Balance) -> dispatch::DispatchResult {
+        let oid = Self::counter_2_orgid(number);
         match Self::get_token_id_by_oid(oid.clone()) {
             Ok(asset_id) => {
                 let free = T::AssetHandler::free_balance_of(asset_id, &owner);
@@ -298,7 +298,7 @@ impl<T: Trait> Module<T>  {
                 ensure!(free >= value && value >= Zero::zero(),Error::<T>::TokenBalanceLow);
                 ensure!(Self::is_member(oid.clone(),&owner),Error::<T>::NotMemberInOrg);
                 ensure!(!Self::is_member(oid.clone(),&who),Error::<T>::MemberDuplicate);
-                Self::base_add_member_on_orgid(oid.clone(),who.clone())?;
+                Self::base_add_member_by_orgid(oid.clone(), who.clone())?;
                 if value > Zero::zero() {
                     T::AssetHandler::transfer(asset_id, &owner, &who, value)
                 } else {

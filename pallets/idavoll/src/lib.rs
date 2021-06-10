@@ -59,7 +59,7 @@ pub trait WeightInfo {
 	fn deposit_to_organization() -> Weight;
 	fn create_proposal() -> Weight;
 	fn vote_proposal() -> Weight;
-	fn add_member_and_assigned_token() -> Weight;
+	fn add_member_and_assign_token() -> Weight;
 }
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -180,7 +180,7 @@ decl_module! {
 		/// info: the details of the new organization
 		///
 		#[weight = T::WeightInfo::create_organization(info.members.len() as u32)]
-		pub fn create_organization(origin,total: T::Balance,info: OrgInfoOf<T>) -> dispatch::DispatchResult {
+		pub fn create_organization(origin, total: T::Balance, info: OrgInfoOf<T>) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let asset_id = Self::create_new_token(owner.clone(),total);
 			let mut info = info;
@@ -200,7 +200,7 @@ decl_module! {
 			Self::on_reserve_to_vault(id,who,value)
 		}
 
-		/// voting on the proposal by the members in the organization,user must be lock it's 'value'
+		/// Vote the proposal by the members in the organization,user must be lock it's 'value'
 		/// of token amount to the idv-asset pallet and record the user's vote power (user's vote result)
 		/// in the proposal storage. the proposal will finish and execute on the vote process when the
 		/// vote result was satisfied with the rule of the proposal.
@@ -214,20 +214,18 @@ decl_module! {
 			let who = ensure_signed(origin)?;
 			Self::on_vote_proposal(pid, who, value, yesorno, frame_system::Module::<T>::block_number())
 		}
-		/// voting on the proposal by the members in the organization,user in the organization can add
-		/// the other account into the organization, New members must obtain tokens before they can
-		/// participate in voting.
-		///
-		/// target: the new account
-		/// id: Ordinal number created by the organization，it mapped whit the organization id.
-		///
-		#[weight = T::WeightInfo::add_member_and_assigned_token()]
-		pub fn add_member_and_assigned_token(origin,target: <T::Lookup as StaticLookup>::Source,id: u32,
+
+		/// Add a new member to the organization and assign tokens to the new member.
+		/// All members in the organization `id` can add accounts `target` into the organization.
+		/// The member can assign `assigned_value` tokens to the new member.
+		/// Note that the `id` is the organization number, not organization id.
+		#[weight = T::WeightInfo::add_member_and_assign_token()]
+		pub fn add_member_and_assign_token(origin, target: <T::Lookup as StaticLookup>::Source, id: u32,
 		assigned_value: T::Balance) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
 			let who = T::Lookup::lookup(target)?;
 
-			Self::on_add_member_and_assign_token(owner,who,id,assigned_value)
+			Self::on_add_member_and_assign_token(owner, who, id, assigned_value)
 		}
 		/// create proposal in the organization for voting by members
 		///
@@ -245,8 +243,9 @@ decl_module! {
 			let expire = cur.saturating_add(length);
 			Self::on_create_proposal(id,who,expire,sub_param,call)
 		}
-		/// the only way to use the vault of the organization. transfer the asset from
+		/// Transfer the assets from the vault of the organization the user.
 		/// organization'vault to the user by vote decision in the members.
+		/// the only way to use the vault of the organization.
 		///
 		#[weight = 100_000]
 		pub fn transfer(
@@ -255,7 +254,7 @@ decl_module! {
 						#[compact] value: T::Balance) -> dispatch::DispatchResult {
 			let send = ensure_signed(origin)?;
 			let dest = T::Lookup::lookup(dest)?;
-			Self::handle_transfer_by_decision(send,dest,value)
+			Self::handle_transfer_by_decision(send, dest, value)
 		}
 	}
 }
@@ -325,8 +324,8 @@ impl<T: Trait> Module<T>  {
 		Ok(())
 	}
 
-	// add a member into a organization by orgid
-	fn base_add_member_on_orgid(oid: T::AccountId,member_id: T::AccountId) -> dispatch::DispatchResult {
+	/// Add a member into the organization by org id
+	fn base_add_member_by_orgid(oid: T::AccountId, member_id: T::AccountId) -> dispatch::DispatchResult {
 		OrgInfos::<T>::try_mutate(oid,|infos| -> dispatch::DispatchResult {
 			match infos {
 				Some(org) => {match org.members

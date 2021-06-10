@@ -42,7 +42,7 @@ impl crate::WeightInfo for () {
             .saturating_add(DbWeight::get().reads((100_u64).saturating_mul(10_u64)))
             .saturating_add(DbWeight::get().writes((500_u64).saturating_mul(10_u64)))
     }
-    fn add_member_and_assigned_token() -> Weight {
+    fn add_member_and_assign_token() -> Weight {
         (200_000_000_u64)
             .saturating_add(DbWeight::get().reads((100_u64).saturating_mul(10_u64)))
             .saturating_add(DbWeight::get().writes((500_u64).saturating_mul(10_u64)))
