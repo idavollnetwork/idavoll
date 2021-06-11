@@ -76,16 +76,16 @@ pub trait Trait: frame_system::Trait {
 	type ModuleId: Get<ModuleId>;
 
 	/// The asset handler will handle all asset operations.
-	type AssetHandler: BaseToken<
+	type TokenHandler: BaseToken<
 		Self::AccountId,
-		AssetId = Self::AssetId,
+		AssetId = Self::TokenId,
 		Balance = Self::Balance,
 	>;
 
 	type Balance: Member + Parameter + AtLeast32BitUnsigned + MaybeSerializeDeserialize + Default + Copy;
 	/// the vaults of all organizations
 	type Finance: BaseFinance<Self::AccountId,Self::Balance>;
-	type AssetId: Parameter + AtLeast32Bit + Default + Copy;
+	type TokenId: Parameter + AtLeast32Bit + Default + Copy;
 
 	/// the staking balance of local asset by user create proposal.
 	type InherentStakeProposal: Get<BalanceOf<Self>>;
@@ -458,9 +458,9 @@ mod test {
 		type Event = ();
 		type Call = Call;
 		type Balance = u64;
-		type AssetId = u32;
+		type TokenId = u32;
 		type ModuleId = IdavollModuleId;
-		type AssetHandler = IdavollAsset;
+		type TokenHandler = IdavollAsset;
 		type Finance = IdavollAsset;
 		type InherentStakeProposal = InherentStakeProposal;
 		type WeightInfo = ();

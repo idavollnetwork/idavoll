@@ -287,9 +287,9 @@ impl pallet_idavoll::Trait for Runtime {
 	type Event = Event;
 	type Call = Call;
 	type Balance = Balance;
-	type AssetId = u32;
+	type TokenId = u32;
 	type ModuleId = IdavollModuleId;
-	type AssetHandler = IdvAsset;
+	type TokenHandler = IdvAsset;
 	type Finance = IdvAsset;
 	type InherentStakeProposal = InherentStakeProposal;
 	type WeightInfo = ();

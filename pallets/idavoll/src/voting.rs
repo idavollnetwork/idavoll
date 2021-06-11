@@ -43,14 +43,14 @@ impl<T: Trait> Module<T> {
             return Err(Error::<T>::ProposalExpired.into());
         }
         // lock the voter's token
-        T::AssetHandler::lock(aid, &voter, value)?;
+        T::TokenHandler::lock(aid, &voter, value)?;
         Self::base_vote_on_proposal(pid,voter,value,vote_for)?;
         // check the proposal can closed
         Self::try_close_proposal(oid.clone(),aid,pid,height)
     }
     /// Try to close the proposal when the proposal was expire or passed.
     /// It will auto unlock the voter's token
-    pub fn try_close_proposal(oid: T::AccountId,aid: T::AssetId,pid: ProposalIdOf<T>,height: T::BlockNumber) -> DispatchResult {
+    pub fn try_close_proposal(oid: T::AccountId, aid: T::TokenId, pid: ProposalIdOf<T>, height: T::BlockNumber) -> DispatchResult {
         let proposal = Self::get_proposal_by_id(pid)?;
         let is_expired = proposal.detail.is_expired(height);
         let is_passed = Self::is_passed(proposal.clone());
@@ -60,7 +60,7 @@ impl<T: Trait> Module<T> {
         if is_expired || is_passed {
             Self::remove_proposal_by_id(pid);
             proposal.detail.votes.iter().for_each(|val|{
-                match T::AssetHandler::unlock(aid, &val.0.clone(), val.1.0) {
+                match T::TokenHandler::unlock(aid, &val.0.clone(), val.1.0) {
                     _ => {},
                 }
             });
@@ -77,8 +77,8 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
     /// Create new token for the new organization
-    pub fn create_new_token(owner: T::AccountId,total: T::Balance) -> T::AssetId {
-        T::AssetHandler::create(owner, total)
+    pub fn create_new_token(owner: T::AccountId,total: T::Balance) -> T::TokenId {
+        T::TokenHandler::create(owner, total)
     }
 
     pub fn handle_transfer_by_decision(oid: T::AccountId,to: T::AccountId,value: T::Balance) -> DispatchResult {

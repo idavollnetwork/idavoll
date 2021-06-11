@@ -117,9 +117,9 @@ impl Trait for Test {
 	type Event = ();
 	type Call = Call;
 	type Balance = u64;
-	type AssetId = u32;
+	type TokenId = u32;
 	type ModuleId = IdavollModuleId;
-	type AssetHandler = IdavollAsset;
+	type TokenHandler = IdavollAsset;
 	type Finance = IdavollAsset;
 	type InherentStakeProposal = InherentStakeProposal;
 	type WeightInfo = ();
