@@ -129,7 +129,7 @@ decl_event!(
 	OrgInfo = OrgInfoOf<T>,
 	{
 		/// An organization was created with the following parameters. \[organization_id, organization_number, details\]
-        OrganizationCreated(AccountId, OrgCount, OrgInfo),
+        OrganizationCreated(AccountId, u32, OrgInfo),
 		/// A proposal has been finalized with the following result. \[proposal_id, result\]
         ProposalFinalized(ProposalId, dispatch::DispatchResult),
         /// A proposal has been passed. \[proposal_id]
@@ -137,7 +137,7 @@ decl_event!(
         /// A proposal has been created.		\[organization_id, proposal_id, creator]
         ProposalCreated(AccountId,ProposalId,AccountId),
         /// Proposal refused or expired \[proposal_id]
-        ProposalRefuse(ProposalId),
+        ProposalRefused(ProposalId),
 	}
 );
 
@@ -172,13 +172,9 @@ decl_module! {
 		// Events must be initialized if they are used by the pallet.
 		fn deposit_event() = default;
 
-		/// create organization with the assetID=0,this will create new token for voting proposal
-		/// and all the tokens will be assigned to the creator.
-		///
-		/// origin: the creator of the organization
-		/// total: the total amount of the new token
-		/// info: the details of the new organization
-		///
+		/// Create organization with the given organization info. Creator should set assetID=0 in
+		/// the `info`, new class of token with `total` amount will be created and assigned to the creator.
+		/// The organization id and number will be specified in the `OrganizationCreated` event.
 		#[weight = T::WeightInfo::create_organization(info.members.len() as u32)]
 		pub fn create_organization(origin, total: T::Balance, info: OrgInfoOf<T>) -> dispatch::DispatchResult {
 			let owner = ensure_signed(origin)?;
@@ -189,30 +185,23 @@ decl_module! {
 			Self::storage_new_organization(info)
 		}
 
-		/// Deposit the asset(IDV) to organization's vault, which will be assigned by the proposal
-		///
-		/// id: organization number，it mapped with the organization id.
-		/// value: the amount of the asset(IDV)
-		///
+		/// Deposit `value` assets(IDV) to organization's vault, which will be assigned by proposals.
+		/// Note that the `id` is the organization number, not organization id.
 		#[weight = T::WeightInfo::deposit_to_organization()]
-		pub fn deposit_to_organization(origin,id: u32,value: T::Balance) -> dispatch::DispatchResult {
+		pub fn deposit_to_organization(origin, id: u32, value: T::Balance) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
-			Self::on_reserve_to_vault(id,who,value)
+			Self::on_reserve_to_vault(id, who, value)
 		}
 
-		/// Vote the proposal by the members in the organization,user must be lock it's 'value'
-		/// of token amount to the idv-asset pallet and record the user's vote power (user's vote result)
-		/// in the proposal storage. the proposal will finish and execute on the vote process when the
-		/// vote result was satisfied with the rule of the proposal.
-		///
-		/// pid: the proposal id of the proposal return by create_proposal.
-		/// value: the weight of vote power,it is the token amount of the token in the organization.
-		/// yesorno: the user approve or against the proposal
-		///
+		/// Vote the proposal `pid`.
+		/// The proposal id `id` is specified in the `ProposalCreated` event.
+		/// Note that only members in the organization can vote. To take `value` vote weight,
+		/// voter should lock `value` tokens. Tokens will be unlocked after the proposal is finish.
+		/// And if the result is satisfied the rule, the proposal will be executed.
 		#[weight = T::WeightInfo::vote_proposal()]
-		pub fn vote_proposal(origin, pid: ProposalIdOf<T>, value: T::Balance, yesorno: bool) -> dispatch::DispatchResult {
+		pub fn vote_proposal(origin, pid: ProposalIdOf<T>, value: T::Balance, vote_for: bool) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
-			Self::on_vote_proposal(pid, who, value, yesorno, frame_system::Module::<T>::block_number())
+			Self::on_vote_proposal(pid, who, value, vote_for, frame_system::Module::<T>::block_number())
 		}
 
 		/// Add a new member to the organization and assign tokens to the new member.
@@ -345,12 +334,13 @@ impl<T: Trait> Module<T>  {
 	fn remove_proposal_by_id(pid: ProposalIdOf<T>) {
 		Proposals::<T>::remove(pid);
 	}
-	/// add vote infos in the proposal item on the storage
+
+	/// Add vote infos in the proposal item
 	fn base_vote_on_proposal(pid: ProposalIdOf<T>, voter: T::AccountId,
-								 value: BalanceOf<T>, yesorno: bool) -> dispatch::DispatchResult {
+								 value: BalanceOf<T>, vote_for: bool) -> dispatch::DispatchResult {
 		Proposals::<T>::try_mutate(pid,|proposal| -> dispatch::DispatchResult {
 			if let Some(p) = proposal {
-				p.detail.vote(voter.clone(),value,yesorno);
+				p.detail.vote(voter.clone(),value, vote_for);
 				// *proposal = Some(p);
 			};
 			Ok(())
@@ -613,9 +603,9 @@ mod test {
 				assert_eq!(proposal.detail.creator(),OWNER.clone());
 				assert_eq!(set_block_number(i as u64),get_block_number());
 				if get_block_number() > 5 {
-					assert_eq!(proposal.detail.is_expire(get_block_number()),true);
+					assert_eq!(proposal.detail.is_expired(get_block_number()), true);
 				} else {
-					assert_eq!(proposal.detail.is_expire(get_block_number()),false);
+					assert_eq!(proposal.detail.is_expired(get_block_number()), false);
 				}
 			}
 			assert_eq!(IdavollModule::count_of_proposals(),10);
@@ -639,7 +629,7 @@ mod test {
 				proposal.detail.vote(i,5,false);
 			}
 			assert_eq!(proposal.detail.summary(),(70,25));
-			assert_eq!(proposal.detail.pass(100),false);
+			assert_eq!(proposal.detail.is_passed(100), false);
 
 			// vote on decision 2
 			proposal.detail.votes = BTreeMap::new();
@@ -650,7 +640,7 @@ mod test {
 				proposal.detail.vote(i,1,false);
 			}
 			assert_eq!(proposal.detail.summary(),(70,3));
-			assert_eq!(proposal.detail.pass(100),true);
+			assert_eq!(proposal.detail.is_passed(100), true);
 
 			// vote on decision 3
 			proposal.detail.votes = BTreeMap::new();
@@ -661,7 +651,7 @@ mod test {
 				proposal.detail.vote(i,1,false);
 			}
 			assert_eq!(proposal.detail.summary(),(80,5));
-			assert_eq!(proposal.detail.pass(100),true);
+			assert_eq!(proposal.detail.is_passed(100), true);
 
 			// vote on decision 4
 			proposal.detail.votes = BTreeMap::new();
@@ -672,7 +662,7 @@ mod test {
 				proposal.detail.vote(i,1,false);
 			}
 			assert_eq!(proposal.detail.summary(),(60,2));
-			assert_eq!(proposal.detail.pass(100),false);
+			assert_eq!(proposal.detail.is_passed(100), false);
 
 			// vote on decision 5
 			proposal.detail.votes = BTreeMap::new();
@@ -683,7 +673,7 @@ mod test {
 				proposal.detail.vote(i,1,false);
 			}
 			assert_eq!(proposal.detail.summary(),(70,6));
-			assert_eq!(proposal.detail.pass(100),false);
+			assert_eq!(proposal.detail.is_passed(100), false);
 
 			// vote on decision 6
 			proposal.detail.votes = BTreeMap::new();
@@ -694,7 +684,7 @@ mod test {
 				proposal.detail.vote(i,1,false);
 			}
 			assert_eq!(proposal.detail.summary(),(60,5));
-			assert_eq!(proposal.detail.pass(100),false);
+			assert_eq!(proposal.detail.is_passed(100), false);
 		});
 	}
 
@@ -704,32 +694,32 @@ mod test {
 			let mut param = OrgRuleParam::default();
 			// passed by 'min_affirmative' ,'max_dissenting' and 'abstention'
 			param.min_affirmative = 70;param.max_dissenting = 0;param.abstention = 0;
-			assert_eq!(param.is_pass(69 as u64,0,0,100),false);
-			assert_eq!(param.is_pass(70 as u64,0,0,100),false);
-			assert_eq!(param.is_pass(71 as u64,0,0,100),true);
-			assert_eq!(param.is_pass(69 as u64,10,10,100),false);
-			assert_eq!(param.is_pass(70 as u64,10,10,100),false);
-			assert_eq!(param.is_pass(71 as u64,10,10,100),true);
+			assert_eq!(param.is_passed(69 as u64, 0, 0, 100), false);
+			assert_eq!(param.is_passed(70 as u64, 0, 0, 100), false);
+			assert_eq!(param.is_passed(71 as u64, 0, 0, 100), true);
+			assert_eq!(param.is_passed(69 as u64, 10, 10, 100), false);
+			assert_eq!(param.is_passed(70 as u64, 10, 10, 100), false);
+			assert_eq!(param.is_passed(71 as u64, 10, 10, 100), true);
 
 			param.min_affirmative = 70;param.max_dissenting = 10;param.abstention = 0;
-			assert_eq!(param.is_pass(69 as u64,10,1,100),false);
-			assert_eq!(param.is_pass(70 as u64,10,1,100),false);
-			assert_eq!(param.is_pass(71 as u64,10,1,100),true);
-			assert_eq!(param.is_pass(69 as u64,9,1,100),false);
-			assert_eq!(param.is_pass(70 as u64,10,1,100),false);
-			assert_eq!(param.is_pass(71 as u64,11,1,100),false);
-			assert_eq!(param.is_pass(71 as u64,9,1,100),true);
-			assert_eq!(param.is_pass(71 as u64,10,1,100),true);
-			assert_eq!(param.is_pass(71 as u64,9,10,100),true);
-			assert_eq!(param.is_pass(71 as u64,10,10,100),true);
+			assert_eq!(param.is_passed(69 as u64, 10, 1, 100), false);
+			assert_eq!(param.is_passed(70 as u64, 10, 1, 100), false);
+			assert_eq!(param.is_passed(71 as u64, 10, 1, 100), true);
+			assert_eq!(param.is_passed(69 as u64, 9, 1, 100), false);
+			assert_eq!(param.is_passed(70 as u64, 10, 1, 100), false);
+			assert_eq!(param.is_passed(71 as u64, 11, 1, 100), false);
+			assert_eq!(param.is_passed(71 as u64, 9, 1, 100), true);
+			assert_eq!(param.is_passed(71 as u64, 10, 1, 100), true);
+			assert_eq!(param.is_passed(71 as u64, 9, 10, 100), true);
+			assert_eq!(param.is_passed(71 as u64, 10, 10, 100), true);
 
 			param.min_affirmative = 70;param.max_dissenting = 10;param.abstention = 3;
-			assert_eq!(param.is_pass(69 as u64,10,2,100),false);
-			assert_eq!(param.is_pass(70 as u64,10,3,100),false);
-			assert_eq!(param.is_pass(71 as u64,10,4,100),false);
-			assert_eq!(param.is_pass(71 as u64,9,2,100),true);
-			assert_eq!(param.is_pass(71 as u64,9,3,100),true);
-			assert_eq!(param.is_pass(71 as u64,9,4,100),false);
+			assert_eq!(param.is_passed(69 as u64, 10, 2, 100), false);
+			assert_eq!(param.is_passed(70 as u64, 10, 3, 100), false);
+			assert_eq!(param.is_passed(71 as u64, 10, 4, 100), false);
+			assert_eq!(param.is_passed(71 as u64, 9, 2, 100), true);
+			assert_eq!(param.is_passed(71 as u64, 9, 3, 100), true);
+			assert_eq!(param.is_passed(71 as u64, 9, 4, 100), false);
 
 			// sub param
 			param.min_affirmative = 70;param.max_dissenting = 10;param.abstention = 3;
