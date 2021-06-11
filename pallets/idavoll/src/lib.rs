@@ -98,7 +98,7 @@ pub type OrgCount = u32;
 pub type OrgInfoOf<T> = OrgInfo<
 	<T as frame_system::Trait>::AccountId,
 	BalanceOf<T>,
-	<T as Trait>::AssetId,
+	<T as Trait>::TokenId,
 >;
 pub type ProposalIdOf<T> = <T as frame_system::Trait>::Hash;
 
