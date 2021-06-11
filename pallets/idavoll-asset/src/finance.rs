@@ -81,12 +81,12 @@ impl<T: Trait> BaseFinance<T::AccountId,LocalBalance<T>> for Module<T> {
         Self::spend_organization_vault(oid,to,value)
     }
     fn locked_balance_of(oid: T::AccountId,who: T::AccountId) -> Result<LocalBalance<T>,DispatchError> {
-        Self::get_vault_locked_balance(oid,who)
+        Self::vault_locked_balance_of(oid, who)
     }
     fn lock_balance(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>) -> DispatchResult {
-        Self::vault_locked_balance(oid,who,value)
+        Self::vault_lock_asset(oid, who, value)
     }
     fn unlock_balance(oid: T::AccountId,who: T::AccountId,value: LocalBalance<T>)-> DispatchResult {
-        Self::vault_unlocked_balance(oid,who,value)
+        Self::vault_unlock_asset(oid, who, value)
     }
 }

@@ -79,7 +79,7 @@ impl<Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned> OrgRulePar
             _phantom: marker::PhantomData,
         }
     }
-    pub fn is_pass(&self,yes_amount: Balance,no_amount: Balance,nu_amount: Balance,total: Balance) -> bool {
+    pub fn is_passed(&self, yes_amount: Balance, no_amount: Balance, nu_amount: Balance, total: Balance) -> bool {
 
         (self.min_affirmative == 0 || yes_amount > Perbill::from_percent(self.min_affirmative) * total.clone()) &&
             (self.max_dissenting == 0 || !(no_amount > Perbill::from_percent(self.max_dissenting) * total.clone())) &&

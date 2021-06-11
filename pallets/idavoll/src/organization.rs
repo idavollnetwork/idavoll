@@ -91,13 +91,14 @@ impl<AccountId: Ord + Clone,
         });
         (yes_balance,no_balance)
     }
-    pub fn is_expire(&self,current: BlockNumber) -> bool {
+    pub fn is_expired(&self, current: BlockNumber) -> bool {
         current > self.end_dt
     }
-    pub fn pass(&self,total_balance: Balance) -> bool {
+
+    pub fn is_passed(&self, total_balance: Balance) -> bool {
         let (yes_balance,no_balance) = self.summary();
         let nu_balance = Zero::zero();
-        self.sub_param.is_pass(yes_balance,no_balance,nu_balance,total_balance)
+        self.sub_param.is_passed(yes_balance, no_balance, nu_balance, total_balance)
     }
     pub fn creator(&self) -> AccountId {
         self.creator.clone()
@@ -133,11 +134,11 @@ where
     Balance: Parameter + Member + PartialOrd + AtLeast32BitUnsigned,
     AssetId: Clone + Default,
 {
-    /// A set of accounts of an organization.
+    /// Accounts set of the organization
     pub members: Vec<AccountId>,
-    /// params for every organization,will set on create organization
+    /// Parameters of the organization, set on organization creating
     pub param:  OrgRuleParam<Balance>,
-    /// only one asset for one organization
+    /// The token for the organization
     pub asset: AssetInfo<AssetId>,
 }
 
@@ -229,27 +230,27 @@ impl<T: Trait> Module<T>  {
         }
     }
 
-    pub fn get_token_id_by_oid(oid: T::AccountId) -> Result<T::AssetId,DispatchResult> {
+    pub fn get_token_id_by_oid(oid: T::AccountId) -> Result<T::TokenId,DispatchResult> {
         let org = Self::get_orginfo_by_id(oid)?;
         Ok(org.get_asset_id())
     }
     pub fn get_total_token_by_oid(oid: T::AccountId) -> Result<T::Balance,DispatchResult> {
         let org = Self::get_orginfo_by_id(oid)?;
 
-        Ok(T::AssetHandle::total(org.get_asset_id()))
+        Ok(T::TokenHandler::total(org.get_asset_id()))
     }
     pub fn get_free_balance_on_token_by_user(oid: T::AccountId,who: T::AccountId) -> Result<T::Balance,DispatchResult> {
         let org = Self::get_orginfo_by_id(oid)?;
-        Ok(T::AssetHandle::free_balance_of(org.get_asset_id(),&who))
+        Ok(T::TokenHandler::free_balance_of(org.get_asset_id(), &who))
     }
     pub fn get_local_balance(id: T::AccountId) -> Result<T::Balance,DispatchError> {
         T::Finance::balance_of(id)
     }
 
-    pub fn is_pass(proposal: ProposalOf<T>) -> bool {
+    pub fn is_passed(proposal: ProposalOf<T>) -> bool {
         let total_balance = Self::get_total_token_by_oid(proposal.org);
         match total_balance {
-            Ok(balance) => proposal.detail.pass(balance),
+            Ok(balance) => proposal.detail.is_passed(balance),
             Err(_) => false,
         }
     }
@@ -257,11 +258,11 @@ impl<T: Trait> Module<T>  {
     pub fn reserve_to_vault(oid: T::AccountId,who: T::AccountId,value: T::Balance) -> DispatchResult {
         T::Finance::reserve_to_org(oid,who,value)
     }
-    pub fn on_reserve_to_vault(id: u32,who: T::AccountId,value: T::Balance) -> DispatchResult {
+    pub fn on_reserve_to_vault(id: u32, who: T::AccountId, value: T::Balance) -> DispatchResult {
         let oid = Self::counter_2_orgid(id);
         // make sure the oid was exist
         Self::get_orginfo_by_id(oid.clone())?;
-        Self::reserve_to_vault(oid,who,value)
+        Self::reserve_to_vault(oid, who, value)
     }
 
     pub fn on_create_proposal(id:u32,who: T::AccountId,expire: T::BlockNumber,sub_param: OrgRuleParamOf<T>
@@ -285,22 +286,23 @@ impl<T: Trait> Module<T>  {
         };
         Self::base_create_proposal(oid,proposal)
     }
-    pub fn on_vote_proposal(pid: ProposalIdOf<T>,who: T::AccountId,value: T::Balance,yesorno: bool,cur: T::BlockNumber) -> DispatchResult {
+
+    pub fn on_vote_proposal(pid: ProposalIdOf<T>,who: T::AccountId,value: T::Balance, vote_for: bool, cur: T::BlockNumber) -> DispatchResult {
         let proposal = Self::get_proposal_by_id(pid)?;
-        Self::vote_on_proposal(proposal.org,pid,who,value,yesorno,cur)
+        Self::vote_on_proposal(proposal.org, pid,who,value, vote_for,cur)
     }
-    pub fn on_add_member_and_assigned_token(owner: T::AccountId,who: T::AccountId,id: u32,value: T::Balance) -> dispatch::DispatchResult {
-        let oid = Self::counter_2_orgid(id);
+    pub fn on_add_member_and_assign_token(owner: T::AccountId, who: T::AccountId, number: u32, value: T::Balance) -> dispatch::DispatchResult {
+        let oid = Self::counter_2_orgid(number);
         match Self::get_token_id_by_oid(oid.clone()) {
             Ok(asset_id) => {
-                let free = T::AssetHandle::free_balance_of(asset_id,&owner);
+                let free = T::TokenHandler::free_balance_of(asset_id, &owner);
 
                 ensure!(free >= value && value >= Zero::zero(),Error::<T>::TokenBalanceLow);
                 ensure!(Self::is_member(oid.clone(),&owner),Error::<T>::NotMemberInOrg);
                 ensure!(!Self::is_member(oid.clone(),&who),Error::<T>::MemberDuplicate);
-                Self::base_add_member_on_orgid(oid.clone(),who.clone())?;
+                Self::base_add_member_by_orgid(oid.clone(), who.clone())?;
                 if value > Zero::zero() {
-                    T::AssetHandle::transfer(asset_id,&owner,&who,value)
+                    T::TokenHandler::transfer(asset_id, &owner, &who, value)
                 } else {
                     Ok(())
                 }
