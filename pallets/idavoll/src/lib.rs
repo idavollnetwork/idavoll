@@ -216,26 +216,24 @@ decl_module! {
 
 			Self::on_add_member_and_assign_token(owner, who, id, assigned_value)
 		}
-		/// create proposal in the organization for voting by members
-		///
-		/// id: Ordinal number created by the organization，it mapped whit the organization id.
-		/// length: the block number(length) as the proposal lift time, if the current block number
-		/// more than the 'length' than the proposal is expired.
-		/// sub_param: the vote rule, it was satisfied with the organization's rule,more details in
-		/// the 'RULE' Module
-		///
+
+		/// Create a proposal to vote. The creator must be the member of the organization,
+		/// and to prevent "spamming", creating a new proposal could require some assets.
+		/// `length` is the voting time (metric in block numbers), expired time is set to the
+		/// block number the proposal created plus `length`. The `sub_param` is the vote rule
+		/// and statisfied by the organization's rule, more details in the 'RULE' Module
+		/// Note that the `id` is the organization number, not organization id.
 		#[weight = T::WeightInfo::create_proposal()]
-		pub fn create_proposal(origin,id: u32,length: T::BlockNumber,sub_param: OrgRuleParamOf<T>,
+		pub fn create_proposal(origin, id: u32, length: T::BlockNumber, sub_param: OrgRuleParamOf<T>,
 		call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {
 			let who = ensure_signed(origin)?;
 			let cur = frame_system::Module::<T>::block_number();
 			let expire = cur.saturating_add(length);
 			Self::on_create_proposal(id,who,expire,sub_param,call)
 		}
-		/// Transfer the assets from the vault of the organization the user.
-		/// organization'vault to the user by vote decision in the members.
-		/// the only way to use the vault of the organization.
-		///
+
+		/// Transfer the assets from the vault of the organization to the dest account.
+		/// The only way to use the vault of the organization is to propose a proposal and vote for it.
 		#[weight = 100_000]
 		pub fn transfer(
 						origin,
