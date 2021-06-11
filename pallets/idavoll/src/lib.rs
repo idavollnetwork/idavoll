@@ -218,11 +218,14 @@ decl_module! {
 		}
 
 		/// Create a proposal to vote. The creator must be the member of the organization,
-		/// and to prevent "spamming", creating a new proposal could require some assets.
+		/// and to prevent "spamming", creating a new proposal could require some assets(The quantity 
+		/// is specified by `InherentStakeProposal`).
 		/// `length` is the voting time (metric in block numbers), expired time is set to the
 		/// block number the proposal created plus `length`. The `sub_param` is the vote rule
 		/// and statisfied by the organization's rule, more details in the 'RULE' Module
-		/// Note that the `id` is the organization number, not organization id.
+		/// Note that the `id` is the organization number, not organization id,The successful 
+		/// creation of the proposal will lock some assets, and the closing of the proposal
+		/// will unlock the assets.
 		#[weight = T::WeightInfo::create_proposal()]
 		pub fn create_proposal(origin, id: u32, length: T::BlockNumber, sub_param: OrgRuleParamOf<T>,
 		call: Box<<T as Trait>::Call>) -> dispatch::DispatchResult {

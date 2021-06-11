@@ -102,12 +102,13 @@ we can create organization with the inherent user `alice` and submit an extrinsi
 2. `total`: the issuance of the new token, When a user creates an organization, a new token is automatically created for voting.
 3. `info`: the details of the new organization,we can use the default value of `OrgInfo`.
 
-### Add Members
-There is a simple way to add member to `DAO` organization,submit an extrinsicz with `idavoll.add_member_by_own` function,In fact, all members of the organization have the right to add members, not just the rights that are unique to the owner of the organization. If a member of the organization wants to participate in the voting of proposals in the organization, it needs to have the unique token of the organization. Created when the organization is created, the token needs to be distributed by the owner or distributed by other members who own the token.
+### Add Members and assign the token
+There is a simple way to add member to `DAO` organization,submit an extrinsicz with `idavoll.add_member_and_assign_token` function,In fact, all members of the organization have the right to add members and assign token to the new member, not just the rights that are unique to the owner of the organization. If a member of the organization wants to participate in the voting of proposals in the organization, it needs to have the unique token of the organization. Created when the organization is created, the token needs to be distributed by the owner or distributed by other members who own the token.
 
 1. `origin`: the owner(`alice`) of the organization or other member in the organization.
 2. `target`: the new account.
 3. `id`: Ordinal number created by the organization，it mapped whit the organization id.
+4. `assigned_value`: the amount of the token,the `origin`(`alice`) will transfer token to the new account.
 
 ### Deposit
 After the organization is created, any member can deposit assets(Local asset[`IDV`]) to the organization as an organization asset, submit an extrinsicz with `idavoll.deposit_to_organization` function.
@@ -123,7 +124,7 @@ Now we can submit an extrinsicz with `idavoll.create_proposal` to create proposa
 2. `id`: Ordinal number created by the organization，it mapped whit the organization id.
 3. `length`: the block number(length) as the proposal lift time, if the current block number more than the `length`, than the proposal is expired.
 4. `sub_param`: the vote rule, it was satisfied with the organization's rule.
-5. `Call`: `Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value))` like [this](https://github.com/idavollnetwork/idavoll/blob/main/pallets/idavoll/src/mock.rs#L130)
+5. `Call`: `Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value))` like [this](https://github.com/idavollnetwork/idavoll/blob/main/pallets/idavoll/src/mock.rs#L150)
 
 ### Vote
 We can use `idavoll.vote_proposal` to participate in the voting of the proposal and process the result of the vote, all members in the organization can voting on proposal with the token values.
