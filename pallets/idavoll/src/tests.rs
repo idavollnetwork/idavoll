@@ -58,23 +58,23 @@ fn it_works_for_add_member() {
 
 		// add members in the organization by org_id and transfer the token for vote from the owner
 		// add member '1' and '2' account by the owner of the organization
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(OWNER.clone()).into(),1,c,10));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(OWNER.clone()).into(),1,c,10));
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&OWNER.clone()),90);
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&1),10);
 		assert_eq!(IdavollModule::get_count_members(org_id),2);
 
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(OWNER.clone()).into(),2,c,10));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(OWNER.clone()).into(),2,c,10));
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&OWNER.clone()),80);
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&2),10);
 		assert_eq!(IdavollModule::get_count_members(org_id),3);
 
 		// add member '3' and '4' account by the '1' account
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(1).into(),3,c,3));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(1).into(),3,c,3));
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&1),7);
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&3),3);
 		assert_eq!(IdavollModule::get_count_members(org_id),4);
 
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(1).into(),4,c,2));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(1).into(),4,c,2));
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&1),5);
 		assert_eq!(IdavollAsset::free_balance(asset_id.clone(),&4),2);
 		assert_eq!(IdavollModule::get_count_members(org_id),5);
@@ -203,10 +203,10 @@ fn it_works_for_5_members_vote_pass() {
 		assert_eq!(IdavollModule::get_count_members(org_id),1);
 		assert_eq!(IdavollAsset::vault_balance_of(org_id),Ok(200 as u64));
 		// add 4 members and assign the tokens for voting
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(OWNER.clone()).into(),1,c,5));
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(OWNER.clone()).into(),2,c,10));
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(OWNER.clone()).into(),3,c,20));
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(OWNER.clone()).into(),4,c,25));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(OWNER.clone()).into(),1,c,5));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(OWNER.clone()).into(),2,c,10));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(OWNER.clone()).into(),3,c,20));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(OWNER.clone()).into(),4,c,25));
 
 		assert_eq!(IdavollModule::get_count_members(org_id),5);
 		assert_eq!(IdavollAsset::free_balance(asset_id,&OWNER.clone()),40);
@@ -251,10 +251,10 @@ fn it_works_for_5_members_vote_fail() {
 		assert_eq!(IdavollModule::get_count_members(org_id),1);
 		assert_eq!(IdavollAsset::vault_balance_of(org_id),Ok(200 as u64));
 		// add 4 members and assign the tokens for voting
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(OWNER.clone()).into(),1,c,5));
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(OWNER.clone()).into(),2,c,10));
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(OWNER.clone()).into(),3,c,20));
-		assert_ok!(IdavollModule::add_member_and_assigned_token(RawOrigin::Signed(OWNER.clone()).into(),4,c,25));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(OWNER.clone()).into(),1,c,5));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(OWNER.clone()).into(),2,c,10));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(OWNER.clone()).into(),3,c,20));
+		assert_ok!(IdavollModule::add_member_and_assign_token(RawOrigin::Signed(OWNER.clone()).into(),4,c,25));
 
 		assert_eq!(IdavollModule::get_count_members(org_id),5);
 		assert_eq!(IdavollAsset::free_balance(asset_id,&OWNER.clone()),40);
