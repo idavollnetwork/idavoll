@@ -124,7 +124,7 @@ Now we can submit an extrinsicz with `idavoll.create_proposal` to create proposa
 2. `id`: Ordinal number created by the organization，it mapped whit the organization id.
 3. `length`: the block number(length) as the proposal lift time, if the current block number more than the `length`, than the proposal is expired.
 4. `sub_param`: the vote rule, it was satisfied with the organization's rule.
-5. `Call`: `Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value))` like [this](https://github.com/idavollnetwork/idavoll/blob/main/pallets/idavoll/src/mock.rs#L150)
+5. `Call`: `Call::IdavollModule(IdavallCall::vault_transfer(RECEIVER.clone(),value))` like [this](https://github.com/idavollnetwork/idavoll/blob/main/pallets/idavoll/src/mock.rs#L150)
 
 ### Vote
 We can use `idavoll.vote_proposal` to participate in the voting of the proposal and process the result of the vote, all members in the organization can voting on proposal with the token values.

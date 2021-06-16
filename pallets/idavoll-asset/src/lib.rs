@@ -137,17 +137,16 @@ decl_error! {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as IdavollAsset {
-		/// The number of units of assets held by any given account.
+		/// record the balance of the tokens, it use to voting.
 		pub Balances: map hasher(blake2_128_concat) (T::AssetId, T::AccountId) => AccountAssetMetadata<T::Balance>;
-		/// record the balance of the local asset(idv) for every organization
-		pub Finances get(fn finances): map hasher(blake2_128_concat) T::AccountId => LocalBalance<T>;
-		/// record the balance of the local asset(idv) for every user who will create proposal
-		pub LockedBalance get(fn locked_balance): map hasher(blake2_128_concat) (T::AccountId,T::AccountId) => LocalBalance<T>;
-		/// The next asset identifier up for grabs.
-		NextAssetId get(fn next_asset_id): T::AssetId;
-        // pub Locks get(fn locks): double_map hasher(blake2_128_concat) (T::AssetId, T::AccountId), hasher(blake2_128_concat) LockIdentifier => T::Balance;
-        /// The details of an asset.
+        /// The details of an token.
         pub TotalSupply get(fn total_supply): map hasher(blake2_128_concat) T::AssetId => Option<AssetDetails<T::Balance,T::AccountId>>;
+		/// record the balance of the asset(idv) for every organization's vault
+		pub Finances get(fn finances): map hasher(blake2_128_concat) T::AccountId => LocalBalance<T>;
+		/// record the balance of the asset(idv) for every user who will create proposal
+		pub LockedBalance get(fn locked_balance): map hasher(blake2_128_concat) (T::AccountId,T::AccountId) => LocalBalance<T>;
+		/// The next token identifier up for grabs.
+		NextAssetId get(fn next_asset_id): T::AssetId;
 	}
 }
 
