@@ -16,9 +16,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit="128"]
-/// Edit this file to define custom logic or remove it if it is not needed.
-/// Learn more about FRAME and the core library of Substrate FRAME pallets:
-/// https://substrate.dev/docs/en/knowledgebase/runtime/frame
+
 
 use frame_support::{
 	codec::{Decode},
@@ -235,10 +233,10 @@ decl_module! {
 			Self::on_create_proposal(id,who,expire,sub_param,call)
 		}
 
-		/// Transfer the assets from the vault of the organization to the dest account.
+		/// Transfer the assets(IDV) from the vault of the organization to the dest account.
 		/// The only way to use the vault of the organization is to propose a proposal and vote for it.
 		#[weight = 100_000]
-		pub fn transfer(
+		pub fn vault_transfer(
 						origin,
 		        		dest: <T::Lookup as StaticLookup>::Source,
 						#[compact] value: T::Balance) -> dispatch::DispatchResult {
@@ -471,7 +469,7 @@ mod test {
 		Call::IdvBalances(pallet_balances::Call::transfer(RECEIVER.clone(), value)).encode()
 	}
 	fn make_transfer_proposal(value: u64) -> Vec<u8> {
-		Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value)).encode()
+		Call::IdavollModule(IdavallCall::vault_transfer(RECEIVER.clone(),value)).encode()
 	}
 	// fn make_system_proposal(_value: u64) -> Vec<u8> {
 	// 	Call::System(frame_system::Call::remark(vec![0; 1])).encode()
