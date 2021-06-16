@@ -148,7 +148,7 @@ pub fn call_to_vec(call: Box<<Test as Trait>::Call>) -> Vec<u8> {
 	call.encode()
 }
 pub fn make_transfer_proposal(value: u64) -> Box<Call> {
-	Box::new(Call::IdavollModule(IdavallCall::transfer(RECEIVER.clone(),value)))
+	Box::new(Call::IdavollModule(IdavallCall::vault_transfer(RECEIVER.clone(),value)))
 }
 
 pub fn create_org(members: Vec<<Test as frame_system::Trait>::AccountId>) -> OrgInfoOf<Test> {

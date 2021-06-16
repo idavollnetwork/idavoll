@@ -14,7 +14,17 @@
  * limitations under the License.
  */
 
-//! the idavoll-asset pallet is a base asset for DAO ,it will be used to token and finance module
+//! the idavoll-asset pallet is a base asset for DAO ,it will be used to token and finance module。
+//! idavoll-asset pallet is a token used for voting within the managed organization and
+//! a vault that manages the storage and use of assets (IDV) in the DAO organization.
+//! The assets of the organization here refer to the original assets (IDV) on the chain.
+//! The idavoll-asset pallet uses the two traits of `BaseToken` and `BaseFinance`
+//! to realize the management of the token used for voting and the assets of the
+//! organization respectively. In addition, the idavoll-asset pallet only provides
+//! external token transfer methods to ensure the security of the original assets.
+//! The only way to transfer the asset form organization's vault is `vault_transfer` method in the
+//! idavoll pallet by use a proposal.
+
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
