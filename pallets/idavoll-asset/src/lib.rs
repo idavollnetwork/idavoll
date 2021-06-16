@@ -137,15 +137,15 @@ decl_error! {
 
 decl_storage! {
 	trait Store for Module<T: Trait> as IdavollAsset {
-		/// record the balance of the tokens, it use to voting.
+		/// The balance of tokens held by any given account..
 		pub Balances: map hasher(blake2_128_concat) (T::AssetId, T::AccountId) => AccountAssetMetadata<T::Balance>;
-        /// The details of an token.
+        /// Total supply of all tokens.
         pub TotalSupply get(fn total_supply): map hasher(blake2_128_concat) T::AssetId => Option<AssetDetails<T::Balance,T::AccountId>>;
-		/// record the balance of the asset(idv) for every organization's vault
+		/// The balance of the assets(IDV) for organizations’ vault
 		pub Finances get(fn finances): map hasher(blake2_128_concat) T::AccountId => LocalBalance<T>;
-		/// record the balance of the asset(idv) for every user who will create proposal
+		/// The locked balance of the assets(IDV) for accounts created proposals
 		pub LockedBalance get(fn locked_balance): map hasher(blake2_128_concat) (T::AccountId,T::AccountId) => LocalBalance<T>;
-		/// The next token identifier up for grabs.
+		/// The next token identifier.
 		NextAssetId get(fn next_asset_id): T::AssetId;
 	}
 }
